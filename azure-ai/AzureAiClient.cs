@@ -17,7 +17,8 @@ public class AzureAiClient
     private readonly string AzureOpenAiModelName;
     private readonly ChatCompletionsOptions options;
     private OpenAIClient client;
-    private Task<Azure.Response<ChatCompletions>> initTask;
+    private Task<Response<StreamingChatCompletions>> initTask;
+    private bool initCompleted = false;
 
     public AzureAiClient(string openAiEndpointUrl, string openAiDeploymentModelName, string azureOpenAiKey, string? systemPrompt = null)
     {
@@ -26,11 +27,7 @@ public class AzureAiClient
         _ = azureOpenAiKey ?? throw new ArgumentNullException("azureOpenAiKey");
 
         AzureOpenAiModelName = openAiDeploymentModelName;
-        
-        if (String.IsNullOrEmpty(azureOpenAiKey))
-        {
-            throw new Exception("No AZURE_OPENAI_API_KEY defined. Define it as an environmental variable.");
-        }
+               
         try 
         {
             client = new OpenAIClient(
@@ -57,7 +54,7 @@ public class AzureAiClient
 
     public async IAsyncEnumerable<string> Ask(string userPrompt)
     {
-        await initTask;
+        await EnsureInitCompleted();
         var response = await GetStreamingCompletionsAsync(userPrompt);
         await foreach (StreamingChatChoice choice in response.Value.GetChoicesStreaming())
         {
@@ -66,6 +63,19 @@ public class AzureAiClient
                 yield return message.Content;
             }
         }
+    }
+
+    public async IAsyncEnumerable<string> GetSystemResponse()
+    {
+        var response = await initTask;
+        await foreach (StreamingChatChoice choice in response.Value.GetChoicesStreaming())
+        {
+            await foreach (ChatMessage message in choice.GetMessageStreaming())
+            {
+                yield return message.Content;
+            }
+        }
+        initCompleted = true;
     }
 
     private async Task<Response<StreamingChatCompletions>> GetStreamingCompletionsAsync(string message)
@@ -78,20 +88,21 @@ public class AzureAiClient
         );
     }
 
-
-    private async Task<Response<ChatCompletions>> InitConversationWithSystemRole(string systemPrompt)
+    private async Task<Response<StreamingChatCompletions>> InitConversationWithSystemRole(string systemPrompt)
     {
         var chatMessage = new ChatMessage(ChatRole.System, systemPrompt);
         options.Messages.Add(chatMessage);
-        var response = await client.GetChatCompletionsAsync(
+        return await client.GetChatCompletionsStreamingAsync(
             deploymentOrModelName: AzureOpenAiModelName,
-            new ChatCompletionsOptions()
-            {
-                Messages =
-                {
-                    chatMessage,
-                }
-            });
-        return response;
+            options
+        );
+    }
+
+    private async Task EnsureInitCompleted()
+    {
+        if (initCompleted) return;
+        
+        await foreach (var _ in GetSystemResponse()); //loop through and discard the IAsyncEnumerables
+        initCompleted = true;
     }
 }
