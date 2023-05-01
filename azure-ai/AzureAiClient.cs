@@ -11,13 +11,13 @@ public class AzureAiClient
     const float NUCLEUS_SAMPLING_FACTOR = (float)0.95;
     const float FREQUENCY_PENALTY = 0;
     const float PRESENCE_PENALTY = 0;
-
-    private readonly string AzureOpenAiModelName;
     const string DEFAULT_SYSTEMPROMPT = "You are an AI assistant that helps people find information.";
 
-    private readonly ChatCompletionsOptions options;
 
+    private readonly string AzureOpenAiModelName;
+    private readonly ChatCompletionsOptions options;
     private OpenAIClient client;
+    private Task<Azure.Response<ChatCompletions>> initTask;
 
     public AzureAiClient(string openAiEndpointUrl, string openAiDeploymentModelName, string azureOpenAiKey, string? systemPrompt = null)
     {
@@ -78,11 +78,11 @@ public class AzureAiClient
         );
     }
 
-    private Task initTask;
 
     private async Task<Response<ChatCompletions>> InitConversationWithSystemRole(string systemPrompt)
     {
         var chatMessage = new ChatMessage(ChatRole.System, systemPrompt);
+        options.Messages.Add(chatMessage);
         var response = await client.GetChatCompletionsAsync(
             deploymentOrModelName: AzureOpenAiModelName,
             new ChatCompletionsOptions()
