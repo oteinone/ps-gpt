@@ -10,14 +10,14 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>gpt</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
   </PropertyGroup>
 
   <!-- Nuget package & release -->
   <PropertyGroup>
       <PackageReadmeFile>README.md</PackageReadmeFile>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <PackageReleaseNotes>A new version without hard-coded url and model name. At least the key was not hard-coded...</PackageReleaseNotes>
+      <PackageReleaseNotes>Fixed system prompt so it affects future conversation.</PackageReleaseNotes>
       <Authors>Otto Teinonen (firstname.lastname@gmail.com)</Authors>
   </PropertyGroup>
   <ItemGroup>
