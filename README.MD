@@ -9,6 +9,7 @@ The project has currently been tested with .NET 6.0 / Windows Terminal / Powersh
 - First argument will be used as gpt model prompt
   - Default prompt value is "You are an AI assistant that helps people find information."
 - `gpt` initializes conversaation
+- `gpt "You are an annoy
 - To start a multiline question type one backtick (`) and press enter to start multiline entry
   - To finalize a multiline question type one backtick (`) again and press enter to finish multiline entry
 - Input `exit` / `quit` / `q` / `done` (or ctrl+c for a more ... uncivilized solution) to quit the program
@@ -31,3 +32,10 @@ The project has currently been tested with .NET 6.0 / Windows Terminal / Powersh
 `ps-gpt` will ask you for these credentials on launch. If you want to really use the tool, set them as env variables.
 
 Better/persistent solution and secure storage for the key might be coming in the future. Or not...
+
+# Development
+
+- `dotnet run` run the tool
+- `dotnet pack` release as a tool (nuget package)
+- `dotnet tool install -g --add-source .\nupkg\ ps-gpt` install the tool in your local toolchain
+- `dotnet tool update -g --add-source .\nupkg\ ps-gpt` update instead of install    
