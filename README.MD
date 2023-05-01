@@ -2,14 +2,14 @@
 
 This project allows you to use Azure OpenAI conversational models directly from console.
 
-The project has currently been tested with .NET 6.0 / Windows Terminal / Powershell
+The project has currently been tested with Windows 10 / .NET 6.0 / Windows Terminal / Powershell
 
 # Usage
 - Define Azure OpenAI key in env variable AZURE_OPENAI_API_KEY to avoid inputting it manually every time
 - First argument will be used as gpt model prompt
   - Default prompt value is "You are an AI assistant that helps people find information."
-- `gpt` initializes conversaation
-- `gpt "You are an annoy
+- `gpt` initializes conversation
+- `gpt "You are a scottish assistant that speaks with a thick scottish accent"` initializes conversation with a scottish assistant
 - To start a multiline question type one backtick (`) and press enter to start multiline entry
   - To finalize a multiline question type one backtick (`) again and press enter to finish multiline entry
 - Input `exit` / `quit` / `q` / `done` (or ctrl+c for a more ... uncivilized solution) to quit the program
@@ -26,10 +26,14 @@ The project has currently been tested with .NET 6.0 / Windows Terminal / Powersh
 - `AZURE_OPENAI_API_KEY`
   - The KEY 1 from your Azure OpenAI instance
   - e.g. `319868aa671247f67a9baa0000000000`
-- To set the keys in Powershell use e.g. `$env:AZURE_OPENAI_API_KEY = "319868aa671247f67a9baa0000000000";`
+- `AZURE_OPENAI_CHAT_PROMPT`
+  - Persist a custom prompt between sessions
+  - If you set a custom prompt with env variable, you will not be shown the prompt response every time.
+  - Note that gpt model might refuse to accept your prompt so test your prompts first using 
+- To set the keys in Powershell use e.g. `$env:AZURE_OPENAI_ENDPOINT_URL = "https://my-openai-instance.openai.azure.com/";`
 
 ## About variables
-`ps-gpt` will ask you for these credentials on launch. If you want to really use the tool, set them as env variables.
+`ps-gpt` will ask you for these credentials on launch (save for chat prompt). If you want to really use the tool, set them as env variables.
 
 Better/persistent solution and secure storage for the key might be coming in the future. Or not...
 

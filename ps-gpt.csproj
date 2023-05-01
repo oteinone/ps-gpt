@@ -10,14 +10,14 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>gpt</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>1.0.3</Version>
+    <Version>1.0.4</Version>
   </PropertyGroup>
 
   <!-- Nuget package & release -->
   <PropertyGroup>
       <PackageReadmeFile>README.md</PackageReadmeFile>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <PackageReleaseNotes>Fixed system prompt so it affects future conversation.</PackageReleaseNotes>
+      <PackageReleaseNotes>Added prompt env variable to readme file.</PackageReleaseNotes>
       <Authors>Otto Teinonen (firstname.lastname@gmail.com)</Authors>
   </PropertyGroup>
   <ItemGroup>
