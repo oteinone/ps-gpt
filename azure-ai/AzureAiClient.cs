@@ -14,19 +14,23 @@ public class AzureAiClient
     const string DEFAULT_SYSTEMPROMPT = "You are an AI assistant that helps people find information.";
 
 
-    private readonly string AzureOpenAiModelName;
+    private readonly string ModelName;
+    private readonly string Endpoint;
     private readonly ChatCompletionsOptions options;
+
     private OpenAIClient client;
     private Task<Response<StreamingChatCompletions>> initTask;
     private bool initCompleted = false;
 
-    public AzureAiClient(string openAiEndpointUrl, string openAiDeploymentModelName, string azureOpenAiKey, string? systemPrompt = null)
+    public AzureAiClient(string openAiEndpointUrl, string openAiDeploymentModelName, string azureOpenAiKey,
+        string? systemPrompt = null)
     {
         _ = openAiEndpointUrl ?? throw new ArgumentNullException("openAiEndpointUrl");
         _ = openAiDeploymentModelName ?? throw new ArgumentNullException("openAiDeploymentModelName");
         _ = azureOpenAiKey ?? throw new ArgumentNullException("azureOpenAiKey");
 
-        AzureOpenAiModelName = openAiDeploymentModelName;
+        ModelName = openAiDeploymentModelName;
+        Endpoint = openAiEndpointUrl;
                
         try 
         {
@@ -49,13 +53,13 @@ public class AzureAiClient
             PresencePenalty = PRESENCE_PENALTY,
         };
 
-        initTask = InitConversationWithSystemRole(systemPrompt ?? DEFAULT_SYSTEMPROMPT);
+        initTask = GetStreamingResponse(ChatRole.System, !string.IsNullOrEmpty(systemPrompt) ? systemPrompt : DEFAULT_SYSTEMPROMPT);
     }
 
     public async IAsyncEnumerable<string> Ask(string userPrompt)
     {
         await EnsureInitCompleted();
-        var response = await GetStreamingCompletionsAsync(userPrompt);
+        var response = await GetStreamingResponse(ChatRole.User, userPrompt);
         await foreach (StreamingChatChoice choice in response.Value.GetChoicesStreaming())
         {
             await foreach (ChatMessage message in choice.GetMessageStreaming())
@@ -78,24 +82,34 @@ public class AzureAiClient
         initCompleted = true;
     }
 
-    private async Task<Response<StreamingChatCompletions>> GetStreamingCompletionsAsync(string message)
+    private async Task<Response<StreamingChatCompletions>> GetStreamingResponse(ChatRole role, string message)
     {
         var chatMessage = new ChatMessage(ChatRole.User, message);
         options.Messages.Add(chatMessage);
-        return await client.GetChatCompletionsStreamingAsync(
-            deploymentOrModelName: AzureOpenAiModelName,
-            options
-        );
+        try
+        {
+            return await client.GetChatCompletionsStreamingAsync(
+                deploymentOrModelName: ModelName,
+                options
+            );
+        }
+        catch (Azure.RequestFailedException e)
+        {
+            if (e.Status == 401)
+            {
+                throw new AuthorizationFailedException($"Could not authorize to open api endpoint {Endpoint} model {ModelName}", e);
+            }
+            throw;
+        }
     }
 
-    private async Task<Response<StreamingChatCompletions>> InitConversationWithSystemRole(string systemPrompt)
+    public class AuthorizationFailedException : Exception
     {
-        var chatMessage = new ChatMessage(ChatRole.System, systemPrompt);
-        options.Messages.Add(chatMessage);
-        return await client.GetChatCompletionsStreamingAsync(
-            deploymentOrModelName: AzureOpenAiModelName,
-            options
-        );
+        public AuthorizationFailedException(string? message, Exception? innerException)
+            :base(message, innerException)
+            {
+
+            }
     }
 
     private async Task EnsureInitCompleted()
@@ -103,6 +117,5 @@ public class AzureAiClient
         if (initCompleted) return;
         
         await foreach (var _ in GetSystemResponse()); //loop through and discard the IAsyncEnumerables
-        initCompleted = true;
     }
 }

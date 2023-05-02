@@ -3,6 +3,7 @@ using Spectre.Console;
 using PowershellGpt.AzureAi;
 using System.Text;
 using Spectre.Console.Rendering;
+using PowershellGpt.Config;
 
 string[] EXIT_TERMS = new string[] { "exit", "quit", "q", "done" };
 const string MULTILINE_INDICATOR = "`";
@@ -10,27 +11,41 @@ const int RESPONSE_PADDING = 2;
 
 #region Initialization
 
+var config = AppConfiguration.GptConfig;
+bool configSaved = false;
+
 // Get a system prompt from args.
 // If prompt is defined in args, we will tell the response later
 string? systemPrompFromArgs = args.FirstOrDefault();
 
-// Get a system prompt from env.
-// If prompt is defined in env, we won't tell the initial response. We'll go directly to business
-string? systemPromptFromEnv = Environment.GetEnvironmentVariable("AZURE_OPENAI_CHAT_PROMPT");
+// Get a system prompt from config.
+// If prompt is defined in config, we won't tell the initial response. We'll go directly to business
+string? systemPromptFromEnv = config.DefaultAppPrompt;
 
 // Get OpenAI endpoint values from env or from the user
-string openapiendpoint = GetOpenApiSetting("AZURE_OPENAI_ENDPOINT_URL");
-string openaimodel = GetOpenApiSetting("AZURE_OPENAI_MODEL_NAME");
-string openaikey = GetOpenApiSetting("AZURE_OPENAI_API_KEY", true);
-
+if (string.IsNullOrEmpty(AppConfiguration.GptConfig.EndpointUrl))
+{
+    AppConfiguration.GptConfig.EndpointUrl = GetSettingString("API Endpoint");
+}
+if (string.IsNullOrEmpty(AppConfiguration.GptConfig.Model))
+{
+    AppConfiguration.GptConfig.Model = GetSettingString("Gpt model/deployment name");
+}
+if (string.IsNullOrEmpty(AppConfiguration.GptConfig.ApiKey))
+{
+    AppConfiguration.GptConfig.ApiKey = GetSettingString("Api key", true);
+}
 // Initialize client
-var azureAiClient = new AzureAiClient(openapiendpoint, openaimodel, openaikey, systemPrompFromArgs ?? systemPromptFromEnv);
+var azureAiClient = new AzureAiClient(AppConfiguration.GptConfig.EndpointUrl, AppConfiguration.GptConfig.Model, AppConfiguration.GptConfig.ApiKey,
+    systemPrompFromArgs ?? systemPromptFromEnv);//, () => AppConfiguration.Save());
 
 // Show system response if custom assistant prompt was used to know whether it has been accepted.
-if (systemPrompFromArgs != null) 
+if (!string.IsNullOrEmpty(systemPrompFromArgs)) 
 {
+    //TODO: If untested api key, do this every time
     WriteHorizontalDivider("System prompt response");
     await StreamChatAnswerToScreen(azureAiClient.GetSystemResponse());
+    configSaved = CheckConfigSaved(configSaved);
 }
 #endregion
 
@@ -51,6 +66,7 @@ while(!string.IsNullOrEmpty(userPrompt = AnsiConsole.Ask<string>("[purple]>>[/]"
         userPrompt = ReadMultiline();
     }
     builder = await StreamChatAnswerToScreen(azureAiClient.Ask(userPrompt));
+    configSaved = CheckConfigSaved(configSaved);
 }
 
 WriteHorizontalDivider("Chat conversation done");
@@ -76,6 +92,13 @@ static async Task<StringBuilder> StreamChatAnswerToScreen(IAsyncEnumerable<strin
     return response;
 }
 
+static bool CheckConfigSaved(bool configSaved)
+{
+    if (configSaved) return true;
+    AppConfiguration.Save();
+    return true;
+}
+
 static IRenderable GetRenderable(string text, bool complete = false)
 {
     var element = new Panel(new Markup($"[green]{Markup.Escape(text)}[orange1]{(!complete ? " ..." : "")}[/][/]"));
@@ -91,15 +114,11 @@ static IRenderable GetRenderable(string text, bool complete = false)
     return table;
 }
 
-static string GetOpenApiSetting(string envVariableName, bool secret = false)
+static string GetSettingString(string settingName, bool secret = false)
 {
-    string? value = Environment.GetEnvironmentVariable(envVariableName);
-    if (string.IsNullOrEmpty(value)) {
-        var prompt = new TextPrompt<string>($"$env:{envVariableName} not found, enter manually:");
-        if (secret) prompt.Secret('*');
-        value = AnsiConsole.Prompt(prompt);
-    } 
-    return value;
+    var prompt = new TextPrompt<string>($"Input {settingName}:");
+    if (secret) prompt.Secret('*');
+    return AnsiConsole.Prompt(prompt);
 }
 
 static string ReadMultiline()
