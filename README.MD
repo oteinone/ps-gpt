@@ -2,7 +2,12 @@
 
 This project allows you to use Azure OpenAI conversational models directly from console.
 
-The project has currently been tested with Windows 10 / .NET 6.0 / Windows Terminal / Powershell
+The project has currently been tested with 
+- Windows 10 / .NET 7.0 / Windows Terminal / Powershell
+- WSL / Ubuntu 22.04 / .NET 7.0 / Windows Terminal / bash
+
+https://user-images.githubusercontent.com/4796019/235936234-0c1329ac-1d33-4fe1-b501-77741b436da8.mp4
+
 
 # Installation
 
