@@ -4,6 +4,10 @@ This project allows you to use Azure OpenAI conversational models directly from 
 
 The project has currently been tested with Windows 10 / .NET 6.0 / Windows Terminal / Powershell
 
+# Installation
+
+## Installation with `dotnet`
+Install the latest published version of this tool from nuget repository using `dotnet tool install -g ps-gpt` or see development section to see how to pack and install from source code.
 # Usage
 
 - `gpt` initializes conversation
@@ -31,7 +35,21 @@ The project has currently been tested with Windows 10 / .NET 6.0 / Windows Termi
 
 # Development
 
+## Basic development commands
 - `dotnet run` run the tool
-- `dotnet pack` release as a tool (nuget package)
-- `dotnet tool install -g --add-source .\nupkg\ ps-gpt` install the tool in your local toolchain
+- `dotnet pack` release as a tool (build a nuget package)
+- `dotnet tool install -g --add-source .\nupkg\ ps-gpt` install the tool from locally built package
 - `dotnet tool update -g --add-source .\nupkg\ ps-gpt` update instead of install    
+
+## Build your own executable
+You can also make a self-contained executable and locate it somewhere in your path
+```
+$rid = "win-x64" // {win/osx/linux}-{x64/arm64}
+dotnet publish `
+   -c Release `
+   -r $rid `
+   -p:PublishSingleFile=true `
+   --self-contained true `
+   --output "releases/$rid"
+```
+See ful list of runtime identifiers [here](https://github.com/dotnet/runtime/blob/main/src/libraries/Microsoft.NETCore.Platforms/src/runtime.json)
