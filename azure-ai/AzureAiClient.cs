@@ -1,11 +1,11 @@
 using Azure;
 using Azure.AI.OpenAI;
+using PowershellGpt.Config;
 
 namespace PowershellGpt.AzureAi;
 
 public class AzureAiClient
 {
-    
     const float TEMPERATURE = (float)0.7;
     const int  MAX_TOKENS = 2000;
     const float NUCLEUS_SAMPLING_FACTOR = (float)0.95;
@@ -22,21 +22,27 @@ public class AzureAiClient
     private Task<Response<StreamingChatCompletions>> initTask;
     private bool initCompleted = false;
 
-    public AzureAiClient(string openAiEndpointUrl, string openAiDeploymentModelName, string azureOpenAiKey,
+    public AzureAiClient(GptEndpointType? type, string endpointUrl, string modelDeploymentName, string key,
         string? systemPrompt = null)
     {
-        _ = openAiEndpointUrl ?? throw new ArgumentNullException("openAiEndpointUrl");
-        _ = openAiDeploymentModelName ?? throw new ArgumentNullException("openAiDeploymentModelName");
-        _ = azureOpenAiKey ?? throw new ArgumentNullException("azureOpenAiKey");
+        _ = endpointUrl ?? throw new ArgumentNullException("openAiEndpointUrl");
+        _ = modelDeploymentName ?? throw new ArgumentNullException("openAiDeploymentModelName");
+        _ = key ?? throw new ArgumentNullException("azureOpenAiKey");
 
-        ModelName = openAiDeploymentModelName;
-        Endpoint = openAiEndpointUrl;
+        ModelName = modelDeploymentName;
+        Endpoint = endpointUrl;
                
         try 
         {
-            client = new OpenAIClient(
-                new Uri(openAiEndpointUrl),
-                new AzureKeyCredential(azureOpenAiKey));
+            if (type == GptEndpointType.OpenAIApi)
+            {
+                client = new OpenAIClient(key);
+            }
+            else
+            {
+                client = new OpenAIClient(new Uri(endpointUrl), new AzureKeyCredential(key));
+            }
+
         }
         catch (Exception e)
         {

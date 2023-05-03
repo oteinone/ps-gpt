@@ -16,11 +16,11 @@ public sealed class GptConfigSection : ConfigurationSection
      IsRequired = false,
      IsKey = false)]
 
-    public EndpointType? EndpointType
+    public GptEndpointType? EndpointType
     {
         get
         {
-            return (EndpointType?) this["endpointType"];
+            return (GptEndpointType?) this["endpointType"];
         }
         set
         {
@@ -92,19 +92,27 @@ public sealed class GptConfigSection : ConfigurationSection
     private static string? ProtectKey(string? key)
     {
         if (string.IsNullOrEmpty(key)) return null;
+        if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+        {
+            return key;
+        }
         return Convert.ToBase64String(ProtectedData.Protect(Encoding.UTF8.GetBytes(key), null, DataProtectionScope.CurrentUser));
     }
 
     private static string? UnProtectKey(string? key)
     {
         if (string.IsNullOrEmpty(key)) return null;
+        if (!System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+        {
+            return key;
+        }
         return Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(key), null, DataProtectionScope.CurrentUser));
     }
 }
 
 
 
-public enum EndpointType {
+public enum GptEndpointType {
     AzureOpenAI,
     OpenAIApi
 }

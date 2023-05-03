@@ -21,8 +21,12 @@ public static class AppConfiguration
 
     public static void Save()
     {
-        Console.WriteLine("Config saved");
         Config.Save(ConfigurationSaveMode.Modified);
+    }
+
+    public static void Clear()
+    {
+        Config.Sections.Remove(GptConfigSection.SectionName);
     }
 }
 

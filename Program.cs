@@ -4,6 +4,7 @@ using PowershellGpt.AzureAi;
 using System.Text;
 using Spectre.Console.Rendering;
 using PowershellGpt.Config;
+using System.Linq.Expressions;
 
 string[] EXIT_TERMS = new string[] { "exit", "quit", "q", "done" };
 const string MULTILINE_INDICATOR = "`";
@@ -16,31 +17,54 @@ bool configSaved = false;
 
 // Get a system prompt from args.
 // If prompt is defined in args, we will tell the response later
-string? systemPrompFromArgs = args.FirstOrDefault();
+string? commandArg = args.FirstOrDefault();
+
+if (commandArg?.ToLower().Trim() == "--clear")
+{
+    AppConfiguration.Clear();
+    AppConfiguration.Save();
+    Console.WriteLine("Configuration cleared");
+    return;
+}
+else if (commandArg?.ToLower().Trim() == "--prompt")
+{
+    var newPrompt = args.Length > 1 ? args[1] : string.Empty;
+    config.DefaultAppPrompt = newPrompt;
+    AppConfiguration.Save();
+    Console.WriteLine(string.IsNullOrEmpty(newPrompt) ? "Default prompt cleared" : $"Default prompt set to \"{newPrompt}\"");
+    return;
+}
 
 // Get a system prompt from config.
 // If prompt is defined in config, we won't tell the initial response. We'll go directly to business
 string? systemPromptFromEnv = config.DefaultAppPrompt;
 
 // Get OpenAI endpoint values from env or from the user
-if (string.IsNullOrEmpty(AppConfiguration.GptConfig.EndpointUrl))
+if (AppConfiguration.GptConfig.EndpointType == null)
+{
+    AppConfiguration.GptConfig.EndpointType = SelectFromEnum<GptEndpointType>("Which type of endpoint are you using");
+}
+if (AppConfiguration.GptConfig.EndpointType == GptEndpointType.AzureOpenAI &&
+    string.IsNullOrEmpty(AppConfiguration.GptConfig.EndpointUrl))
 {
     AppConfiguration.GptConfig.EndpointUrl = GetSettingString("API Endpoint");
 }
 if (string.IsNullOrEmpty(AppConfiguration.GptConfig.Model))
 {
-    AppConfiguration.GptConfig.Model = GetSettingString("Gpt model/deployment name");
+    AppConfiguration.GptConfig.Model = GetSettingString(
+        AppConfiguration.GptConfig.EndpointType == GptEndpointType.AzureOpenAI ? "Deployment name" : "Model name");
 }
 if (string.IsNullOrEmpty(AppConfiguration.GptConfig.ApiKey))
 {
-    AppConfiguration.GptConfig.ApiKey = GetSettingString("Api key", true);
+    AppConfiguration.GptConfig.ApiKey = GetSettingString("API Key", true);
 }
+
 // Initialize client
-var azureAiClient = new AzureAiClient(AppConfiguration.GptConfig.EndpointUrl, AppConfiguration.GptConfig.Model, AppConfiguration.GptConfig.ApiKey,
-    systemPrompFromArgs ?? systemPromptFromEnv);//, () => AppConfiguration.Save());
+var azureAiClient = new AzureAiClient(AppConfiguration.GptConfig.EndpointType, AppConfiguration.GptConfig.EndpointUrl,
+AppConfiguration.GptConfig.Model, AppConfiguration.GptConfig.ApiKey, commandArg ?? systemPromptFromEnv);
 
 // Show system response if custom assistant prompt was used to know whether it has been accepted.
-if (!string.IsNullOrEmpty(systemPrompFromArgs)) 
+if (!string.IsNullOrEmpty(commandArg)) 
 {
     //TODO: If untested api key, do this every time
     WriteHorizontalDivider("System prompt response");
@@ -118,6 +142,17 @@ static string GetSettingString(string settingName, bool secret = false)
 {
     var prompt = new TextPrompt<string>($"Input {settingName}:");
     if (secret) prompt.Secret('*');
+    return AnsiConsole.Prompt(prompt);
+}
+
+static T SelectFromEnum<T>(string title)
+    where T : struct, System.Enum
+{
+    var prompt = new SelectionPrompt<T>()
+    {
+        Title = title
+    };
+    prompt.AddChoices(Enum.GetValues<T>());
     return AnsiConsole.Prompt(prompt);
 }
 

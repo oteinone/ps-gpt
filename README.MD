@@ -5,37 +5,29 @@ This project allows you to use Azure OpenAI conversational models directly from 
 The project has currently been tested with Windows 10 / .NET 6.0 / Windows Terminal / Powershell
 
 # Usage
-- Define Azure OpenAI key in env variable AZURE_OPENAI_API_KEY to avoid inputting it manually every time
-- First argument will be used as gpt model prompt
-  - Default prompt value is "You are an AI assistant that helps people find information."
+
 - `gpt` initializes conversation
-- `gpt "You are a scottish assistant that speaks with a thick scottish accent"` initializes conversation with a scottish assistant
+- First argument will be used as gpt model prompt
+  - `gpt "You are a scottish assistant that speaks with a thick scottish accent"` initializes conversation with a scottish assistant
+  - Default prompt value is "You are an AI assistant that helps people find information."
+- First time you use the tool you will be asked to enter API information
+  - Select between OpenAI Api and Azure OpenAI Api
+  - Enter deployment name (Azure OpenAI) or model name (OpenAI)
+- Your selections will be stored in app configuration file for next time
+  - Your key is protected using DPAPI on windows but currently unprotected on other OS!
+  - `gpt --clear` removes the local configuration
 - To start a multiline question type one backtick (`) and press enter to start multiline entry
   - To finalize a multiline question type one backtick (`) again and press enter to finish multiline entry
 - Input `exit` / `quit` / `q` / `done` (or ctrl+c for a more ... uncivilized solution) to quit the program
 
-# Environment variables
-## Available variables
-- `AZURE_OPENAI_ENDPOINT_URL`
-  - Url to your Azure OpenAI instance
-  - e.g. `https://my-openai-instance.openai.azure.com/`
-- `AZURE_OPENAI_MODEL_NAME`
-  - The deployed model used to converse with openai
-  - e.g. `gpt-test-deployment`
-  - **Note! Only gpt-35 has been tested by the author**
-- `AZURE_OPENAI_API_KEY`
-  - The KEY 1 from your Azure OpenAI instance
-  - e.g. `319868aa671247f67a9baa0000000000`
-- `AZURE_OPENAI_CHAT_PROMPT`
-  - Persist a custom prompt between sessions
-  - If you set a custom prompt with env variable, you will not be shown the prompt response every time.
-  - Note that gpt model might refuse to accept your prompt so test your prompts first using 
-- To set the keys in Powershell use e.g. `$env:AZURE_OPENAI_ENDPOINT_URL = "https://my-openai-instance.openai.azure.com/";`
+# Configuration
+## Config parameters
+- Use `gpt --prompt` to modify the default prompt
+  - `gpt --prompt "New prompt value"` sets a new default prompt value
+  - `gpt --prompt` clears any custom prompt values
+## Clear configuration
+- Use `gpt --clear` to remove existing configuration and you will be prompted for a new config the next time you run `gpt`
 
-## About variables
-`ps-gpt` will ask you for these credentials on launch (save for chat prompt). If you want to really use the tool, set them as env variables.
-
-Better/persistent solution and secure storage for the key might be coming in the future. Or not...
 
 # Development
 

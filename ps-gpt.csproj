@@ -10,15 +10,17 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>gpt</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
   </PropertyGroup>
 
   <!-- Nuget package & release -->
   <PropertyGroup>
       <PackageReadmeFile>README.md</PackageReadmeFile>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <PackageReleaseNotes>Added prompt env variable to readme file.</PackageReleaseNotes>
+      <PackageReleaseNotes>Persistent configuration file for the package + support for OpenAI API.</PackageReleaseNotes>
       <Authors>Otto Teinonen (firstname.lastname@gmail.com)</Authors>
+      <RepositoryUrl>https://github.com/oteinone/ps-gpt.git</RepositoryUrl>
+      <RepositoryType>git</RepositoryType>
   </PropertyGroup>
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="\" />
