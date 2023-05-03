@@ -89,6 +89,10 @@ public sealed class GptConfigSection : ConfigurationSection
         }
     }
 
+    public string MultilineIndicator => "`";
+    public int ResponsePadding => 2;
+    public string[] ExitTerms => new string[] { "exit", "quit", "q", "done" };
+
     private static string? ProtectKey(string? key)
     {
         if (string.IsNullOrEmpty(key)) return null;

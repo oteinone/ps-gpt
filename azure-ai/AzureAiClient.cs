@@ -28,7 +28,7 @@ public class AzureAiClient
         _ = endpointUrl ?? throw new ArgumentNullException("openAiEndpointUrl");
         _ = modelDeploymentName ?? throw new ArgumentNullException("openAiDeploymentModelName");
         _ = key ?? throw new ArgumentNullException("azureOpenAiKey");
-
+    
         ModelName = modelDeploymentName;
         Endpoint = endpointUrl;
                
