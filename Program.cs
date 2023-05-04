@@ -11,9 +11,11 @@ bool configSaved = false;
 var appControl = Application.AppStart(args);
 if (appControl.EndApplication) return;
 
+var gptConfig = AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>();
+
 // Initialize client
-var azureAiClient = new AzureAiClient(AppConfiguration.GptConfig.EndpointType, AppConfiguration.GptConfig.EndpointUrl,
-AppConfiguration.GptConfig.Model, AppConfiguration.GptConfig.ApiKey!, appControl.CustomPromptValue);
+var azureAiClient = new AzureAiClient(gptConfig.EndpointType, gptConfig.EndpointUrl, gptConfig.Model,
+    gptConfig.ApiKey!, appControl.CustomPromptValue);
 
 // Show system response if custom assistant prompt was used to know whether it has been accepted.
 if (appControl.ShowPromptResponse) 
@@ -31,11 +33,11 @@ string? userPrompt;
 StringBuilder builder;
 while(!string.IsNullOrEmpty(userPrompt = Application.Ask()))
 {
-    if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.GptConfig.ExitTerms.Contains(userPrompt.ToLower()))
+    if (string.IsNullOrWhiteSpace(userPrompt) || gptConfig.ExitTerms.Contains(userPrompt.ToLower()))
     {
         break;
     }
-    else if (userPrompt == AppConfiguration.GptConfig.MultilineIndicator)
+    else if (userPrompt == gptConfig.MultilineIndicator)
     {
         userPrompt = Application.ReadMultiline();
     }

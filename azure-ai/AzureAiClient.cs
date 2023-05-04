@@ -6,11 +6,6 @@ namespace PowershellGpt.AzureAi;
 
 public class AzureAiClient
 {
-    const float TEMPERATURE = (float)0.7;
-    const int  MAX_TOKENS = 2000;
-    const float NUCLEUS_SAMPLING_FACTOR = (float)0.95;
-    const float FREQUENCY_PENALTY = 0;
-    const float PRESENCE_PENALTY = 0;
     const string DEFAULT_SYSTEMPROMPT = "You are an AI assistant that helps people find information.";
 
 
@@ -49,14 +44,15 @@ public class AzureAiClient
             throw new Exception ("Could not initialize open ai client", e);
         }
 
+        var modelConfig = AppConfiguration.GetOrCreateConfigSection<AppConfiguration.ModelConfigSection>();
         options = new ChatCompletionsOptions()
         {
             Messages = { },
-            Temperature = TEMPERATURE,
-            MaxTokens = MAX_TOKENS,
-            NucleusSamplingFactor = NUCLEUS_SAMPLING_FACTOR,
-            FrequencyPenalty = FREQUENCY_PENALTY,
-            PresencePenalty = PRESENCE_PENALTY,
+            Temperature = modelConfig.Temperature,
+            MaxTokens = modelConfig.MaxTokenCount,
+            NucleusSamplingFactor = modelConfig.NucleusSamplingFactor,
+            FrequencyPenalty = modelConfig.FrequencyPenalty,
+            PresencePenalty = modelConfig.PresencePenalty
         };
 
         initTask = GetStreamingResponse(ChatRole.System, !string.IsNullOrEmpty(systemPrompt) ? systemPrompt : DEFAULT_SYSTEMPROMPT);

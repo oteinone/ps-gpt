@@ -7,18 +7,19 @@ namespace PowershellGpt.Application;
 
 public static class Application
 {
+    
     // Method handles command arguments, updates application configuration
     // returns information required to run the program line application main loop.
     public static AppControlFlow AppStart(string[] args)
     {
-        var config = AppConfiguration.GptConfig;
+        var config = CurrentConfiguration;
         string? commandArg = args.FirstOrDefault();
 
         // handle command line arguments
         if (commandArg?.ToLower().Trim() == "--clear")
         {
-            AppConfiguration.Clear();
-            AppConfiguration.Save();
+            AppConfiguration.ClearAll();
+            AppConfiguration.SaveAll();
             Console.WriteLine("Configuration cleared");
             return new AppControlFlow() { EndApplication = true };
         }
@@ -26,7 +27,7 @@ public static class Application
         {
             var newPrompt = args.Length > 1 ? args[1] : string.Empty;
             config.DefaultAppPrompt = newPrompt;
-            AppConfiguration.Save();
+            AppConfiguration.SaveAll();
             Console.WriteLine(string.IsNullOrEmpty(newPrompt) ? "Default prompt cleared" : $"Default prompt set to \"{newPrompt}\"");
             return new AppControlFlow() { EndApplication = true };
         }
@@ -36,23 +37,23 @@ public static class Application
         string? systemPromptFromEnv = config.DefaultAppPrompt;
 
         // Get OpenAI endpoint values from env or from the user
-        if (AppConfiguration.GptConfig.EndpointType == null)
+        if (config.EndpointType == null)
         {
-            AppConfiguration.GptConfig.EndpointType = SelectFromEnum<GptEndpointType>("Which type of endpoint are you using");
+            config.EndpointType = SelectFromEnum<GptEndpointType>("Which type of endpoint are you using");
         }
-        if (AppConfiguration.GptConfig.EndpointType == GptEndpointType.AzureOpenAI &&
-            string.IsNullOrEmpty(AppConfiguration.GptConfig.EndpointUrl))
+        if (config.EndpointType == GptEndpointType.AzureOpenAI &&
+            string.IsNullOrEmpty(config.EndpointUrl))
         {
-            AppConfiguration.GptConfig.EndpointUrl = GetSettingString("API Endpoint");
+            config.EndpointUrl = GetSettingString("API Endpoint");
         }
-        if (string.IsNullOrEmpty(AppConfiguration.GptConfig.Model))
+        if (string.IsNullOrEmpty(config.Model))
         {
-            AppConfiguration.GptConfig.Model = GetSettingString(
-                AppConfiguration.GptConfig.EndpointType == GptEndpointType.AzureOpenAI ? "Deployment name" : "Model name");
+            config.Model = GetSettingString(
+                config.EndpointType == GptEndpointType.AzureOpenAI ? "Deployment name" : "Model name");
         }
-        if (string.IsNullOrEmpty(AppConfiguration.GptConfig.ApiKey))
+        if (string.IsNullOrEmpty(config.ApiKey))
         {
-            AppConfiguration.GptConfig.ApiKey = GetSettingString("API Key", true);
+            config.ApiKey = GetSettingString("API Key", true);
         }
 
         return new AppControlFlow() 
@@ -83,7 +84,7 @@ public static class Application
     public static bool CheckConfigSaved(bool configSaved)
     {
         if (configSaved) return true;
-        AppConfiguration.Save();
+        AppConfiguration.SaveAll();
         return true;
     }
 
@@ -92,7 +93,7 @@ public static class Application
         var element = new Panel(new Markup($"[green]{Markup.Escape(text)}[orange1]{(!complete ? " ..." : "")}[/][/]"));
         element.Expand();
         element.Border = BoxBorder.None;
-        element.PadLeft(AppConfiguration.GptConfig.ResponsePadding);
+        element.PadLeft(CurrentConfiguration.ResponsePadding);
 
         var table = new Table();
         table.AddColumn("");
@@ -138,7 +139,7 @@ public static class Application
             while (!sr.EndOfStream)
             {
                 var input = sr.ReadLine();
-                if (input == AppConfiguration.GptConfig.MultilineIndicator)
+                if (input == CurrentConfiguration.MultilineIndicator)
                     return result;
                 else
                     result += input + Environment.NewLine;
@@ -146,6 +147,9 @@ public static class Application
             return result;
         }
     }
+
+    private static AppConfiguration.GptConfigSection CurrentConfiguration => 
+        AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>();
 }
 
 public class AppControlFlow

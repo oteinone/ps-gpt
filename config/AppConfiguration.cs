@@ -2,31 +2,46 @@ using System.Configuration;
 
 namespace PowershellGpt.Config;
 
-public static class AppConfiguration
+public partial class AppConfiguration
 {
     private static Lazy<Configuration> execonfig = new Lazy<Configuration>(() => ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None));
     private static Configuration Config => execonfig.Value;
 
-    public static GptConfigSection GptConfig
+    public static T GetOrCreateConfigSection<T>()
+        where T: ConfigurationSection, INamedConfigSection, new()
     {
-        get
+        if (Config.Sections[T.GetSectionName()] == null)
         {
-            if (Config.Sections[GptConfigSection.SectionName] == null)
-            {
-                Config.Sections.Add(GptConfigSection.SectionName, new GptConfigSection());
-            }
-            return (GptConfigSection) Config.Sections[GptConfigSection.SectionName];
+            Config.Sections.Add(T.GetSectionName(), new T());
         }
+        return (T) Config.Sections[T.GetSectionName()];
     }
 
-    public static void Save()
+    public static void SaveAll()
     {
         Config.Save(ConfigurationSaveMode.Modified);
     }
 
-    public static void Clear()
+    public static void ClearAll()
     {
-        Config.Sections.Remove(GptConfigSection.SectionName);
+        Config.Sections.Remove(AppConfiguration.GptConfigSection.GetSectionName());
+        Config.Sections.Remove(ModelConfigSection.GetSectionName());
     }
-}
 
+    public static void Clear<T>()
+        where T: ConfigurationSection, INamedConfigSection, new()
+    {
+        Config.Sections.Remove(T.GetSectionName());
+    }
+
+    public partial class GptConfigSection
+    {
+        // Implementation in GptConfigSection.cs
+    }
+
+    public partial class ModelConfigSection
+    {
+        // Implementation in ModelConfigSection
+    }
+
+}
