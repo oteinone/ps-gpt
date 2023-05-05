@@ -10,14 +10,14 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>gpt</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
   </PropertyGroup>
 
   <!-- Nuget package & release -->
   <PropertyGroup>
       <PackageReadmeFile>README.md</PackageReadmeFile>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <PackageReleaseNotes>Persistent configuration file for the package + support for OpenAI API.</PackageReleaseNotes>
+      <PackageReleaseNotes>Handle pipeline input and output gracefully</PackageReleaseNotes>
       <Authors>Otto Teinonen (firstname.lastname@gmail.com)</Authors>
       <RepositoryUrl>https://github.com/oteinone/ps-gpt.git</RepositoryUrl>
       <RepositoryType>git</RepositoryType>
@@ -30,7 +30,6 @@
   <!-- References -->
   <ItemGroup>
     <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.5" />
-    <PackageReference Include="Markdig" Version="0.31.0" />
     <PackageReference Include="Spectre.Console" Version="0.46.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
   </ItemGroup>
