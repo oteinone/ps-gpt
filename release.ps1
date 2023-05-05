@@ -5,7 +5,6 @@ foreach($rid in $releases) {
         -c Release `
         -r $rid `
         -p:PublishSingleFile=true `
-        -p:PublishTrimmed=true `
         --self-contained true `
         --output "releases/$rid"
 
