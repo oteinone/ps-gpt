@@ -7,12 +7,14 @@ namespace PowershellGpt.Application;
 
 public static class Application
 {
+
+
     
     // Method handles command arguments, updates application configuration
     // returns information required to run the program line application main loop.
-    public static AppControlFlow AppStart(string[] args)
+    public static async Task<AppControlFlow> AppStart(string[] args)
     {
-        var config = CurrentConfiguration;
+        var config = GptConfiguration;
         string? commandArg = args.FirstOrDefault();
 
         // handle command line arguments
@@ -32,35 +34,39 @@ public static class Application
             return new AppControlFlow() { EndApplication = true };
         }
 
-        // Get a system prompt from config.
-        // If prompt is defined in config, we won't tell the initial response. We'll go directly to business
-        string? systemPromptFromEnv = config.DefaultAppPrompt;
+         if (config.EndpointType == null || (config.EndpointType == GptEndpointType.AzureOpenAI && string.IsNullOrEmpty(config.EndpointUrl))
+            || string.IsNullOrEmpty(config.Model) || string.IsNullOrEmpty(config.ApiKey))
+        {
+            if (Console.IsInputRedirected) throw new ApplicationInitializationException(
+                "Application configuration was incomplete, cannot accept input from pipeline. Run the application directly to set application configuration");
 
-        // Get OpenAI endpoint values from env or from the user
-        if (config.EndpointType == null)
-        {
-            config.EndpointType = SelectFromEnum<GptEndpointType>("Which type of endpoint are you using");
-        }
-        if (config.EndpointType == GptEndpointType.AzureOpenAI &&
-            string.IsNullOrEmpty(config.EndpointUrl))
-        {
-            config.EndpointUrl = GetSettingString("API Endpoint");
-        }
-        if (string.IsNullOrEmpty(config.Model))
-        {
-            config.Model = GetSettingString(
-                config.EndpointType == GptEndpointType.AzureOpenAI ? "Deployment name" : "Model name");
-        }
-        if (string.IsNullOrEmpty(config.ApiKey))
-        {
-            config.ApiKey = GetSettingString("API Key", true);
+            // Get OpenAI endpoint values from env or from the user
+            if (config.EndpointType == null)
+            {
+                config.EndpointType = SelectFromEnum<GptEndpointType>("Which type of endpoint are you using");
+            }
+            if (config.EndpointType == GptEndpointType.AzureOpenAI &&
+                string.IsNullOrEmpty(config.EndpointUrl))
+            {
+                config.EndpointUrl = GetSettingString("API Endpoint");
+            }
+            if (string.IsNullOrEmpty(config.Model))
+            {
+                config.Model = GetSettingString(
+                    config.EndpointType == GptEndpointType.AzureOpenAI ? "Deployment name" : "Model name");
+            }
+            if (string.IsNullOrEmpty(config.ApiKey))
+            {
+                config.ApiKey = GetSettingString("API Key", true);
+            }
         }
 
         return new AppControlFlow() 
         {
             EndApplication = false,
             ShowPromptResponse = !string.IsNullOrEmpty(commandArg),
-            CustomPromptValue = commandArg ?? systemPromptFromEnv
+            CustomPromptValue = commandArg ?? config.DefaultAppPrompt,
+            PipedInput = await ReadPipedInput()
         };
     }
 
@@ -81,6 +87,14 @@ public static class Application
         return response;
     }
 
+    public static async Task StreamChatAnswerToStdOut(IAsyncEnumerable<string> messageStream)
+    {
+            await foreach (var message in messageStream)
+            {
+                await Console.Out.WriteAsync(message);
+            }
+    }
+
     public static bool CheckConfigSaved(bool configSaved)
     {
         if (configSaved) return true;
@@ -93,7 +107,7 @@ public static class Application
         var element = new Panel(new Markup($"[green]{Markup.Escape(text)}[orange1]{(!complete ? " ..." : "")}[/][/]"));
         element.Expand();
         element.Border = BoxBorder.None;
-        element.PadLeft(CurrentConfiguration.ResponsePadding);
+        element.PadLeft(GptConfiguration.ResponsePadding);
 
         var table = new Table();
         table.AddColumn("");
@@ -126,9 +140,11 @@ public static class Application
         return AnsiConsole.Prompt(prompt);
     }
 
-    internal static string? Ask()
+    internal static string? AskUser()
     {
-        return AnsiConsole.Ask<string>("[purple]>>[/]");
+        Console.Write(">> ");
+        return Console.ReadLine();
+        //return AnsiConsole.Ask<string>("[purple]>>[/]");
     }
 
     public static string ReadMultiline()
@@ -139,7 +155,7 @@ public static class Application
             while (!sr.EndOfStream)
             {
                 var input = sr.ReadLine();
-                if (input == CurrentConfiguration.MultilineIndicator)
+                if (input == GptConfiguration.MultilineIndicator)
                     return result;
                 else
                     result += input + Environment.NewLine;
@@ -148,7 +164,17 @@ public static class Application
         }
     }
 
-    private static AppConfiguration.GptConfigSection CurrentConfiguration => 
+    private static async Task<string> ReadPipedInput()
+    {
+        if (Console.IsInputRedirected)
+        {
+            var result = await Console.In.ReadToEndAsync();
+            return result;
+        }
+        else return string.Empty;
+    }
+
+    private static AppConfiguration.GptConfigSection GptConfiguration => 
         AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>();
 }
 
@@ -157,4 +183,15 @@ public class AppControlFlow
     public bool EndApplication { get; set; }
     public bool ShowPromptResponse { get; set; }
     public string? CustomPromptValue { get; set; }
+
+    public string? PipedInput { get; set; }
+}
+
+public class ApplicationInitializationException : Exception
+{
+    public ApplicationInitializationException(string msg) 
+        : base(msg) { }
+
+    public ApplicationInitializationException(string msg, Exception inner) 
+        : base(msg, inner) { }
 }

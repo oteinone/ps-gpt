@@ -28,21 +28,6 @@ public partial class AppConfiguration
             }
         }
 
-        [ConfigurationProperty("defaultAppPrompt",
-        IsRequired = false,
-        IsKey = true)]
-        public string DefaultAppPrompt
-        {
-            get
-            {
-                return (string) this["defaultAppPrompt"];
-            }
-            set
-            {
-                this["defaultAppPrompt"] = value;
-            }
-        }
-
         [ConfigurationProperty("endpointUrl",
         IsRequired = false,
         IsKey = true)]
@@ -73,8 +58,7 @@ public partial class AppConfiguration
             }
         }
 
-        [ConfigurationProperty("apikey",
-        
+        [ConfigurationProperty("apikey",        
         IsRequired = false,
         IsKey = true)]
         public string? ApiKey
@@ -86,6 +70,22 @@ public partial class AppConfiguration
             set
             {
                 this["apikey"] = ProtectKey(value);
+            }
+        }
+        
+
+        [ConfigurationProperty("defaultAppPrompt",
+        IsRequired = false,
+        IsKey = true)]
+        public string DefaultAppPrompt
+        {
+            get
+            {
+                return (string) this["defaultAppPrompt"];
+            }
+            set
+            {
+                this["defaultAppPrompt"] = value;
             }
         }
 
