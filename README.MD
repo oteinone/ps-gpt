@@ -19,6 +19,7 @@ Install the latest published version of this tool from nuget repository using `d
 - First argument will be used as gpt model prompt
   - `gpt "You are a scottish assistant that speaks with a thick scottish accent"` initializes conversation with a scottish assistant
   - Default prompt value is "You are an AI assistant that helps people find information."
+  - Prompt is currently used as a system message which doesn't work very well (at least with gpt-3-models)
 - First time you use the tool you will be asked to enter API information
   - Select between OpenAI Api and Azure OpenAI Api
   - Enter deployment name (Azure OpenAI) or model name (OpenAI)
