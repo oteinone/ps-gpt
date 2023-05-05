@@ -27,6 +27,7 @@ Install the latest published version of this tool from nuget repository using `d
   - `gpt --clear` removes the local configuration
 - To start a multiline question type one backtick (`) and press enter to start multiline entry
   - To finalize a multiline question type one backtick (`) again and press enter to finish multiline entry
+- If you pipe input into the application (`echo "Give me a list of wine grapes" | gpt`) it will query the gpt model with the default/parameter settings and pipe the input to stdout
 - Input `exit` / `quit` / `q` / `done` (or ctrl+c for a more ... uncivilized solution) to quit the program
 
 # Configuration

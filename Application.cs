@@ -8,8 +8,6 @@ namespace PowershellGpt.Application;
 public static class Application
 {
 
-
-    
     // Method handles command arguments, updates application configuration
     // returns information required to run the program line application main loop.
     public static async Task<AppControlFlow> AppStart(string[] args)
@@ -38,7 +36,7 @@ public static class Application
             || string.IsNullOrEmpty(config.Model) || string.IsNullOrEmpty(config.ApiKey))
         {
             if (Console.IsInputRedirected) throw new ApplicationInitializationException(
-                "Application configuration was incomplete, cannot accept input from pipeline. Run the application directly to set application configuration");
+                "Application configuration was incomplete, cannot accept input from pipeline. Run the application once without piped input to set application configuration");
 
             // Get OpenAI endpoint values from env or from the user
             if (config.EndpointType == null)
@@ -89,10 +87,10 @@ public static class Application
 
     public static async Task StreamChatAnswerToStdOut(IAsyncEnumerable<string> messageStream)
     {
-            await foreach (var message in messageStream)
-            {
-                await Console.Out.WriteAsync(message);
-            }
+        await foreach (var message in messageStream)
+        {
+            Console.Write(message);
+        }
     }
 
     public static bool CheckConfigSaved(bool configSaved)
