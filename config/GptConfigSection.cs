@@ -72,6 +72,8 @@ public partial class AppConfiguration
                 this["apikey"] = ProtectKey(value);
             }
         }
+
+        public string CensoredApiKey => new String(ApiKey?.Select(k => '*').ToArray() ?? new char[0]);
         
 
         [ConfigurationProperty("defaultAppPrompt",

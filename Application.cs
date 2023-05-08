@@ -3,34 +3,15 @@ using PowershellGpt.Config;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
-namespace PowershellGpt.Application;
+namespace PowershellGpt;
 
 public static class Application
 {
 
-    // Method handles command arguments, updates application configuration
-    // returns information required to run the program line application main loop.
-    public static async Task<AppControlFlow> AppStart(string[] args)
+    // Makes sure that the current profile has all necessary parameters available to operate
+    public static void EnsureValidConfiguration()
     {
         var config = GptConfiguration;
-        string? commandArg = args.FirstOrDefault();
-
-        // handle command line arguments
-        if (commandArg?.ToLower().Trim() == "--clear")
-        {
-            AppConfiguration.ClearAll();
-            AppConfiguration.SaveAll();
-            Console.WriteLine("Configuration cleared");
-            return new AppControlFlow() { EndApplication = true };
-        }
-        else if (commandArg?.ToLower().Trim() == "--prompt")
-        {
-            var newPrompt = args.Length > 1 ? args[1] : string.Empty;
-            config.DefaultAppPrompt = newPrompt;
-            AppConfiguration.SaveAll();
-            Console.WriteLine(string.IsNullOrEmpty(newPrompt) ? "Default prompt cleared" : $"Default prompt set to \"{newPrompt}\"");
-            return new AppControlFlow() { EndApplication = true };
-        }
 
          if (config.EndpointType == null || (config.EndpointType == GptEndpointType.AzureOpenAI && string.IsNullOrEmpty(config.EndpointUrl))
             || string.IsNullOrEmpty(config.Model) || string.IsNullOrEmpty(config.ApiKey))
@@ -38,11 +19,11 @@ public static class Application
             if (Console.IsInputRedirected) throw new ApplicationInitializationException(
                 "Application configuration was incomplete, cannot accept input from pipeline. Run the application once without piped input to set application configuration");
 
-            // Get OpenAI endpoint values from env or from the user
             if (config.EndpointType == null)
             {
                 config.EndpointType = SelectFromEnum<GptEndpointType>("Which type of endpoint are you using");
             }
+            // Openai endpoint url is hardcoded into library so it is not necessary to ask user the api url
             if (config.EndpointType == GptEndpointType.AzureOpenAI &&
                 string.IsNullOrEmpty(config.EndpointUrl))
             {
@@ -58,17 +39,9 @@ public static class Application
                 config.ApiKey = GetSettingString("API Key", true);
             }
         }
-
-        return new AppControlFlow() 
-        {
-            EndApplication = false,
-            ShowPromptResponse = !string.IsNullOrEmpty(commandArg),
-            CustomPromptValue = commandArg ?? config.DefaultAppPrompt,
-            PipedInput = await ReadPipedInput()
-        };
     }
 
-    public static async Task<StringBuilder> StreamChatAnswerToScreen(IAsyncEnumerable<string> messageStream)
+    public static async Task<StringBuilder> StreamChatAnswerToScreenAsync(IAsyncEnumerable<string> messageStream)
     {
         var response = new StringBuilder(" ");
         await AnsiConsole.Live(GetRenderable("")).StartAsync(async ctx => {
@@ -85,7 +58,7 @@ public static class Application
         return response;
     }
 
-    public static async Task StreamChatAnswerToStdOut(IAsyncEnumerable<string> messageStream)
+    public static async Task StreamChatAnswerToStdOutAsync(IAsyncEnumerable<string> messageStream)
     {
         await foreach (var message in messageStream)
         {
@@ -102,14 +75,19 @@ public static class Application
 
     public static IRenderable GetRenderable(string text, bool complete = false)
     {
-        var element = new Panel(new Markup($"[green]{Markup.Escape(text)}[orange1]{(!complete ? " ..." : "")}[/][/]"));
-        element.Expand();
-        element.Border = BoxBorder.None;
-        element.PadLeft(GptConfiguration.ResponsePadding);
+        // Markup with ... at end if the reponse is not complete 
+        var markup = new Markup($"[green]{Markup.Escape(text)}[orange1]{(!complete ? " ..." : "")}[/][/]");
 
+        // Panel is for padding
+        var panel = new Panel(markup);
+        panel.Expand();
+        panel.Border = BoxBorder.None;
+        panel.PadLeft(GptConfiguration.ResponsePadding);
+
+        // Panel does not really work alone with live view so we use a table as well
         var table = new Table();
         table.AddColumn("");
-        table.AddRow(element);
+        table.AddRow(panel);
         table.Expand();
         table.Border = TableBorder.None;
         return table;
@@ -120,25 +98,7 @@ public static class Application
         AnsiConsole.Write(new Rule($"[green]{message}[/]").LeftJustified());
     }
 
-    private static string GetSettingString(string settingName, bool secret = false)
-    {
-        var prompt = new TextPrompt<string>($"Input {settingName}:");
-        if (secret) prompt.Secret('*');
-        return AnsiConsole.Prompt(prompt);
-    }
-
-    private static T SelectFromEnum<T>(string title)
-        where T : struct, System.Enum
-    {
-        var prompt = new SelectionPrompt<T>()
-        {
-            Title = title
-        };
-        prompt.AddChoices(Enum.GetValues<T>());
-        return AnsiConsole.Prompt(prompt);
-    }
-
-    internal static string? AskUser()
+    public static string? AskUser()
     {
         Console.Write(">> ");
         return Console.ReadLine();
@@ -162,7 +122,7 @@ public static class Application
         }
     }
 
-    private static async Task<string> ReadPipedInput()
+    public static async Task<string> ReadPipedInputAsync()
     {
         if (Console.IsInputRedirected)
         {
@@ -172,17 +132,41 @@ public static class Application
         else return string.Empty;
     }
 
+    public static void PrintProfile(string[,] profile)
+    {
+        var table = new Table();
+        table.AddColumn("Setting name");
+        table.AddColumn("Setting value");
+        for (int i = 0; i < profile.GetLength(0); i++)
+        {
+            if (i % 2 == 0)
+                table.AddRow(new Markup($"[seagreen1]{profile[i,0]}[/]"), new Markup($"[seagreen1]{profile[i,1]}[/]"));
+            else
+                table.AddRow(new Markup($"[steelblue1_1]{profile[i,0]}[/]"), new Markup($"[steelblue1_1]{profile[i,1]}[/]"));
+        }
+        AnsiConsole.Write(table);
+    }
+
+    private static string GetSettingString(string settingName, bool secret = false)
+    {
+        var prompt = new TextPrompt<string>($"Input {settingName}:");
+        if (secret) prompt.Secret('*');
+        return AnsiConsole.Prompt(prompt);
+    }
+
+    private static T SelectFromEnum<T>(string title)
+        where T : struct, System.Enum
+    {
+        var prompt = new SelectionPrompt<T>()
+        {
+            Title = title
+        };
+        prompt.AddChoices(Enum.GetValues<T>());
+        return AnsiConsole.Prompt(prompt);
+    }
+
     private static AppConfiguration.GptConfigSection GptConfiguration => 
         AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>();
-}
-
-public class AppControlFlow
-{
-    public bool EndApplication { get; set; }
-    public bool ShowPromptResponse { get; set; }
-    public string? CustomPromptValue { get; set; }
-
-    public string? PipedInput { get; set; }
 }
 
 public class ApplicationInitializationException : Exception

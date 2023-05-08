@@ -8,7 +8,6 @@ public class AzureAiClient
 {
     const string DEFAULT_SYSTEMPROMPT = "You are an AI assistant that helps people find information.";
 
-
     private readonly string ModelName;
     private readonly string Endpoint;
     private readonly ChatCompletionsOptions options;
@@ -26,7 +25,7 @@ public class AzureAiClient
     
         ModelName = modelDeploymentName;
         Endpoint = endpointUrl;
-               
+        
         try 
         {
             if (type == GptEndpointType.OpenAIApi)

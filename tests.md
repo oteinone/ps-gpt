@@ -1,0 +1,4 @@
+- OpenAI API & Azure OpenAI
+- Linux + Windows
+- With & without stdin pipe
+- Args prompt, default prompt, no prompt

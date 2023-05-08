@@ -7,6 +7,12 @@ public partial class AppConfiguration
     private static Lazy<Configuration> execonfig = new Lazy<Configuration>(() => ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None));
     private static Configuration Config => execonfig.Value;
 
+    private static Lazy<AppConfiguration.GptConfigSection> _gptConfig = new Lazy<AppConfiguration.GptConfigSection>(
+        () => AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>());
+
+    public static AppConfiguration.GptConfigSection GptConfig => _gptConfig.Value;
+
+
     public static T GetOrCreateConfigSection<T>()
         where T: ConfigurationSection, INamedConfigSection, new()
     {
