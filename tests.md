@@ -1,4 +1,8 @@
 - OpenAI API & Azure OpenAI
 - Linux + Windows
+- get-profile
+- set-profile
+- clear
+- system-prompt
 - With & without stdin pipe
-- Args prompt, default prompt, no prompt
+- With template and without template
