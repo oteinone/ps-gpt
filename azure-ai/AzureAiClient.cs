@@ -6,14 +6,12 @@ namespace PowershellGpt.AzureAi;
 
 public class AzureAiClient
 {
-    const string DEFAULT_SYSTEMPROMPT = "You are an AI assistant that helps people find information.";
-
     private readonly string ModelName;
     private readonly string Endpoint;
     private readonly ChatCompletionsOptions options;
 
     private OpenAIClient client;
-    private Task<Response<StreamingChatCompletions>> initTask;
+    private Task<Response<StreamingChatCompletions>>? initTask;
     private bool initCompleted = false;
 
     public AzureAiClient(GptEndpointType? type, string endpointUrl, string modelDeploymentName, string key,
@@ -54,7 +52,15 @@ public class AzureAiClient
             PresencePenalty = modelConfig.PresencePenalty
         };
 
-        initTask = GetStreamingResponse(ChatRole.System, !string.IsNullOrEmpty(systemPrompt) ? systemPrompt : DEFAULT_SYSTEMPROMPT);
+        // Use system prompt if it has been defined
+        if (systemPrompt != null)
+        {
+            initTask = GetStreamingResponse(ChatRole.System, systemPrompt);
+        }
+        else
+        {
+            initTask = null;
+        }
     }
 
     public async IAsyncEnumerable<string> Ask(string userPrompt)
@@ -72,12 +78,15 @@ public class AzureAiClient
 
     public async IAsyncEnumerable<string> GetSystemResponse()
     {
-        var response = await initTask;
-        await foreach (StreamingChatChoice choice in response.Value.GetChoicesStreaming())
+        if (initTask != null)
         {
-            await foreach (ChatMessage message in choice.GetMessageStreaming())
+            var response = await initTask;
+            await foreach (StreamingChatChoice choice in response.Value.GetChoicesStreaming())
             {
-                yield return message.Content;
+                await foreach (ChatMessage message in choice.GetMessageStreaming())
+                {
+                    yield return message.Content;
+                }
             }
         }
         initCompleted = true;
@@ -85,7 +94,7 @@ public class AzureAiClient
 
     private async Task<Response<StreamingChatCompletions>> GetStreamingResponse(ChatRole role, string message)
     {
-        var chatMessage = new ChatMessage(ChatRole.User, message);
+        var chatMessage = new ChatMessage(role, message);
         options.Messages.Add(chatMessage);
         try
         {

@@ -91,6 +91,21 @@ public partial class AppConfiguration
             }
         }
 
+        [ConfigurationProperty("defaultSystemPrompt",
+        IsRequired = false,
+        IsKey = true)]
+        public string DefaultSystemPrompt
+        {
+            get
+            {
+                return (string) this["defaultSystemPrompt"];
+            }
+            set
+            {
+                this["defaultSystemPrompt"] = value;
+            }
+        }
+
         public string MultilineIndicator => "`";
         public int ResponsePadding => 2;
         public string[] ExitTerms => new string[] { "exit", "quit", "q", "done" };

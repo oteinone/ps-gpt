@@ -38,6 +38,8 @@ public static class Application
             {
                 config.ApiKey = GetSettingString("API Key", true);
             }
+
+            AppConfiguration.SaveAll();
         }
     }
 
@@ -64,13 +66,6 @@ public static class Application
         {
             Console.Write(message);
         }
-    }
-
-    public static bool CheckConfigSaved(bool configSaved)
-    {
-        if (configSaved) return true;
-        AppConfiguration.SaveAll();
-        return true;
     }
 
     public static IRenderable GetRenderable(string text, bool complete = false)
@@ -140,9 +135,11 @@ public static class Application
         for (int i = 0; i < profile.GetLength(0); i++)
         {
             if (i % 2 == 0)
-                table.AddRow(new Markup($"[seagreen1]{profile[i,0]}[/]"), new Markup($"[seagreen1]{profile[i,1]}[/]"));
+                table.AddRow(new Markup($"[seagreen1]{Markup.Escape(profile[i,0])}[/]"),
+                    new Markup($"[seagreen1]{Markup.Escape(profile[i,1])}[/]"));
             else
-                table.AddRow(new Markup($"[steelblue1_1]{profile[i,0]}[/]"), new Markup($"[steelblue1_1]{profile[i,1]}[/]"));
+                table.AddRow(new Markup($"[steelblue1_1]{Markup.Escape(profile[i,0])}[/]"),
+                    new Markup($"[steelblue1_1]{Markup.Escape(profile[i,1])}[/]"));
         }
         AnsiConsole.Write(table);
     }

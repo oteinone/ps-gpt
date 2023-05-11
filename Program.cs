@@ -6,7 +6,12 @@ using Spectre.Console.Cli;
 var app = new CommandApp<GptCommand>();
 app.Configure(config => {
     config.SetApplicationName("ps-gpt");
+    config.AddExample(new string[0]);
+    config.AddExample(new [] {"\"Give me a list of 10 fruit\""});
+    config.AddExample(new [] { "--set-profile", "model=gpt-3.5-turbo"});
+
     config.ValidateExamples();
+    config.SetExceptionHandler(e => throw e);
 });
 
 return app.Run(args);
