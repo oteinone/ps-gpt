@@ -25,25 +25,22 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         string? text = null;
         string? template = string.IsNullOrWhiteSpace(AppConfiguration.GptConfig.DefaultAppPrompt) ? null : AppConfiguration.GptConfig.DefaultAppPrompt;
         
-        if (Console.IsInputRedirected) //Handle requests from stdin
+        if (Console.IsInputRedirected) //Handle text from stdin
         {
             text = await Application.ReadPipedInputAsync();
-            if (!settings.Chat || !ClaimConsole.Claim())
+            if (!settings.Chat || !ClaimConsole.Claim()) // if chat mode is not attempted or console cannot be claimed, pipe directly to stdout and terminate
             {
                 await Application.StreamChatAnswerToStdOutAsync(azureAiClient.Ask(GetUserMessage(text, template)));
                 return 0;
             }
         }
-        else if (!string.IsNullOrWhiteSpace(settings.Text)) //Handle requests from params
+        else if (!string.IsNullOrWhiteSpace(settings.Text)) //Handle text from args
         {
-            if (!settings.Chat)
+            text = settings.Text;
+            if (!settings.Chat) // If chat mode is not attempted, pipe to stdout and terminate
             {
-                await Application.StreamChatAnswerToStdOutAsync(azureAiClient.Ask(GetUserMessage(settings.Text, template)));
+                await Application.StreamChatAnswerToStdOutAsync(azureAiClient.Ask(GetUserMessage(text, template)));
                 return 0;
-            }
-            else
-            {
-                text = settings.Text;
             }
         }
 
@@ -59,12 +56,15 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         Application.WriteHorizontalDivider("Ask ChatGPT");
         
         // Main program loop
-        string? userPrompt = null;
         StringBuilder builder;
+
+        // First loop, use template and input text when appropriate
+        string userPrompt = GetUserMessage(
+            (string.IsNullOrWhiteSpace(text) ? Application.AskUser() : text) ?? string.Empty,
+            template);
+           
         while(true)
         {
-            // If this is the first loop AND settings.Text has value, use that one.
-            userPrompt = (userPrompt != null || string.IsNullOrWhiteSpace(text)) ? Application.AskUser() : GetUserMessage(text, template);
             if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.GptConfig.ExitTerms.Contains(userPrompt.ToLower()))
             {
                 break;
@@ -74,22 +74,17 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
                 userPrompt = Application.ReadMultiline();
             }
             builder = await Application.StreamChatAnswerToScreenAsync(azureAiClient.Ask(userPrompt));
+            // get input for next loop
+            userPrompt = Application.AskUser() ?? string.Empty;
         }
 
         Application.WriteHorizontalDivider("Chat conversation done");
 
         return 0;
     }
-    
+
     private static async Task<int> HandleConfigCommands(Options settings)
     {
-       string? pipedText = null;
-
-        if (Console.IsInputRedirected)
-        {
-            pipedText = await Application.ReadPipedInputAsync();
-        }
-
         if (settings.Clear)
         {
             AppConfiguration.ClearAll();
@@ -104,6 +99,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         }
         else if (!string.IsNullOrEmpty(settings.SetProfile))
         {
+            string? pipedText = Console.IsInputRedirected ? await Application.ReadPipedInputAsync() : null;
             SetGptProfile(pipedText, settings);
             PrintGptProfile();
             return 0;
@@ -212,6 +208,10 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         [CommandOption("--chat|-c")]
         [Description("Forces chat mode (continuous conversation) in cases where the input would otherwise be written to console/stdout")]
         public bool Chat { get; set; }
+
+        [CommandOption("--prompt")]
+        [Description("Commands the api with a 'system' type message before initializing the actual conversation")]
+        public string? Prompt { get; set; }
 
         [CommandOption("--system-prompt")]
         [Description("Commands the api with a 'system' type message before initializing the actual conversation")]
