@@ -11,7 +11,11 @@ app.Configure(config => {
     config.AddExample(new [] { "--set-profile", "model=gpt-3.5-turbo"});
 
     config.ValidateExamples();
-    config.SetExceptionHandler(e => throw e);
+    #if DEBUG
+    {
+        config.SetExceptionHandler(e => throw e);
+    }
+    #endif
 });
 
 return app.Run(args);
