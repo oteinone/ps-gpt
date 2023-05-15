@@ -118,6 +118,21 @@ public static class Application
         }
     }
 
+    public static async Task<string> GetTemplate(string templatePath)
+    {
+        return await ReadFileAsync(templatePath);
+    }
+
+    private static async Task<string> ReadFileAsync(string filePath)
+    {
+        using (StreamReader reader = new StreamReader(filePath))
+        {
+            string content = await reader.ReadToEndAsync();
+            return content;
+        }
+    }
+    
+
     public static async Task<string> ReadPipedInputAsync()
     {
         if (Console.IsInputRedirected)

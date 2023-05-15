@@ -13,35 +13,56 @@ https://user-images.githubusercontent.com/4796019/235936234-0c1329ac-1d33-4fe1-b
 
 ## Installation with `dotnet`
 Install the latest published version of this tool from nuget repository using `dotnet tool install -g ps-gpt` or see development section to see how to pack and install from source code.
-# Usage
 
+## Installation using binary
+Drop the binary somewhere in your path. The binaries are named ps-gpt by default so the commands are `ps-gpt` instead of `gpt` unless you rename or add an alias.
+
+# Usage
 - `gpt` initializes conversation
-- First argument will be used as gpt model message
-  - Default prompt value is "You are an AI assistant that helps people find information."
-- First time you use the tool you will be asked to enter API information
+- Profile:
+  - First time you use the tool you will be asked to enter your configuration
   - Select between OpenAI Api and Azure OpenAI Api
-  - Enter deployment name (Azure OpenAI) or model name (OpenAI)
-- Your selections will be stored in app configuration file for next time
-  - Your key is protected using DPAPI on windows but currently unprotected on other OS!
-  - `gpt --clear` removes the local configuration
-- To start a multiline question type one backtick (`) and press enter to start multiline entry
-  - To finalize a multiline question type one backtick (`) again and press enter to finish multiline entry
-- If you pipe input into the application (`echo "Give me a list of wine grapes" | gpt`) it will query the gpt model with the default/parameter settings and pipe the input to stdout.
-- You can also use a "system prompt" to send a "system" type message to the model
-  - `gpt --system-prompt "You are a scottish assistant that speaks with a thick scottish accent"` initializes conversation with a scottish assistant using a system message
-- Input `exit` / `quit` / `q` / `done` (or ctrl+c for a more ... uncivilized solution) to quit the program
+  - Enter deployment name (Azure) or model name (OpenAI), endpoint url (Azure) and api key (both)
+  - Profile is persisted in a configuration file
+    - On Windows your key is protected using DPAPI but it's currently unprotected on Linux/Mac
+- Prompt:
+  - You can have the prompt text as the first positional argument: `gpt "Give me a list of wine grapes"`
+  - You can use content piped from a previous command as the prompt text: `echo "Give me a list of wine grapes" | gpt`
+  - If no prompt is provided, "chat mode" is initialized and you can type in the prompt in the chat
+- Chat mode
+  - If you input your prompt as a parameter, the application will by default write the result into stdout and exit. If you want to continue the conversation use chat mode (`-c`)
+  - Multiline input is started and ended with a line with only one backtick (`)
+  - Input `exit` / `quit` / `q` / `done` (or ctrl+c for a more ... uncivilized solution) to quit the program
+- Templates
+  - Templates are a way to reuse instructions that work very well
+  - A template should contain the characters `{text}` somewhere which will be replaced by the prompt read from arguments, pipeline or chat mode.
+- System prompt is a way to give persistent instructions for a conversation
+  - `gpt --system-prompt "You are a scottish assistant that speaks with a thick scottish accent"` initializes conversation with a scottish assistant using a system message 
+  - System prompt works poorly in gpt 3.5 but better in gpt-4
+  - When you give ps-gpt a system prompt, the conversation is initialized with the system prompt.  
+
+# Pipeline examples
+- Read a file and set it's contents as default prompt template (works with any profile setting)
+  -  `cat midjourney_prompts.txt | gpt --set-profile default_prompt_template`
+- Read a file and use it's contents as the prompt
+  - `cat data-file.txt | gpt`
+- Read a file
+- One-liners to write content in text editor and use it as a prompt
+  - Linux: `TMPFILE=$(mktemp); nano $TMPFILE; cat $TMPFILE | gpt`
+  - Powershell: `$tmpfile = New-TemporaryFile; notepad $tmpfile | Out-Null; Get-Content $tmpfile | gpt`
 
 # Configuration
-## Manage configuraiton
-- Use `gpt --clear` to remove existing configuration and you will be prompted for a new config the next time you run `gpt`
+## Manage configuration
+- Use `gpt --clear` to remove existing configuration and you will be prompted for a full config the next time you run `gpt`
 - Use `gpt --get-profile` to see current profile settings
-- Use `gpt --set-profile model=gpt3.5` to set an individual profile setting
+- Use `gpt --set-profile model=gpt3.5` or `echo "gpt3.5" | gpt --set-profile model` to set an individual profile setting
 - Use `-c, --chat` to continue the conversation even when receiving input from parameters, e.g. `gpt "Tell me about youself" -c`
-  - Note! On Windows you can even use `echo "Tell me about yourself | gpt -c` to pipe in a question and still enter chat mode
+  - Note! On Windows you can even use `echo "Tell me about yourself | gpt -c` to pipe in a question and still enter chat mode. Please tell me if you know how te reclaim the console input in Linux.
 - Use `gpt --system-prompt "You are Albert Einstein, the famous physician"` to initialize the conversation with a system type message
+
 ## Templates
-- You can set a prompt template for the profile using `gpt --set-profile default_prompt_template="template"` to set a prompt template that will be applied to every first message in a conversation
-  - If your template contains the string `{text}`, it will be replaced by the input text 
+- You can set a prompt template for the profile using `gpt --set-profile default_prompt_template="Instruction: {text}"` . Template will be used to every first message in a conversation
+  - `{text}` in the template will be replaced with the text content either from 
 # Development
 
 ## Basic development commands

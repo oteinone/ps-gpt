@@ -22,13 +22,14 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         var azureAiClient = new AzureAiClient(AppConfiguration.GptConfig.EndpointType, AppConfiguration.GptConfig.EndpointUrl, AppConfiguration.GptConfig.Model,
             AppConfiguration.GptConfig.ApiKey!, settings.SystemPrompt ?? AppConfiguration.GptConfig.DefaultSystemPrompt);
 
+
+        var template = await GetTemplate(settings);
         string? text = null;
-        string? template = string.IsNullOrWhiteSpace(AppConfiguration.GptConfig.DefaultAppPrompt) ? null : AppConfiguration.GptConfig.DefaultAppPrompt;
-        
+
         if (Console.IsInputRedirected) //Handle text from stdin
         {
             text = await Application.ReadPipedInputAsync();
-            if (!settings.Chat || !ClaimConsole.Claim()) // if chat mode is not attempted or console cannot be claimed, pipe directly to stdout and terminate
+            if (!settings.Chat || !ConsoleHelper.ReclaimConsole()) // if chat mode is not attempted or console cannot be claimed, pipe directly to stdout and terminate
             {
                 await Application.StreamChatAnswerToStdOutAsync(azureAiClient.Ask(GetUserMessage(text, template)));
                 return 0;
@@ -114,6 +115,20 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
             : $"{template}{Environment.NewLine}###{Environment.NewLine}{text}";
     }
 
+    
+    private static async Task<string?> GetTemplate(Options settings)
+    {
+        if (settings.Template != null)
+        {
+            return await Application.GetTemplate(settings.Template);
+        }
+        else if (!string.IsNullOrWhiteSpace(AppConfiguration.GptConfig.DefaultAppPrompt))
+        {
+            return AppConfiguration.GptConfig.DefaultAppPrompt;
+        }
+        return null;
+    }
+
     private static void PrintGptProfile()
     {
         var gptConfig = AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>();
@@ -188,7 +203,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
     public class Options : CommandSettings
     {
         [CommandArgument(0, "[text]")]
-        [Description("The text content of the conversation to send to the specified model. Potentially preceded/surrounded by a prompt template.")]
+        [Description("The text prompt sent to the specified model. Potentially preceded/surrounded by a prompt template if one has been defined.")]
         public string? Text { get; init; }
 
         [CommandOption("--clear")]
@@ -196,12 +211,12 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         [DefaultValue(false)]
         public bool Clear { get; init; }
 
-        [CommandOption("--get-profile")]
+        [CommandOption("--get-profile|-g")]
         [Description("Shows the current profile settings saved in application configuration")]
         [DefaultValue(false)]
         public bool GetProfile { get; init; }
 
-        [CommandOption("--set-profile")]
+        [CommandOption("--set-profile|-s")]
         [Description("Sets a value in current profile. E.g. --set-profile model=gpt-3")]
         public string? SetProfile { get; init; }
 
@@ -209,13 +224,12 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         [Description("Forces chat mode (continuous conversation) in cases where the input would otherwise be written to console/stdout")]
         public bool Chat { get; set; }
 
-        [CommandOption("--prompt")]
-        [Description("Commands the api with a 'system' type message before initializing the actual conversation")]
-        public string? Prompt { get; set; }
-
         [CommandOption("--system-prompt")]
         [Description("Commands the api with a 'system' type message before initializing the actual conversation")]
         public string? SystemPrompt { get; set; }
 
+        [CommandOption("--template|-t")]
+        [Description("A file path pointing to a template file. Template file is used as a wrapper for text content. '{text}' in templates is replaced with the text prompt")]
+        public string? Template { get; set; }
     }
 }
