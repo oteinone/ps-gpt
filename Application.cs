@@ -66,6 +66,7 @@ public static class Application
         {
             Console.Write(message);
         }
+        Console.WriteLine();
     }
 
     public static IRenderable GetRenderable(string text, bool complete = false)
