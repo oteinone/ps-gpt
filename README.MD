@@ -6,7 +6,7 @@ The project has currently been tested with
 - Windows 10 / .NET 7.0 / Windows Terminal / Powershell
 - WSL / Ubuntu 22.04 / .NET 7.0 / Windows Terminal / bash
 
-https://user-images.githubusercontent.com/4796019/235936234-0c1329ac-1d33-4fe1-b501-77741b436da8.mp4
+https://github.com/oteinone/ps-gpt/assets/4796019/d1bd7bd3-24e7-45e8-99e7-78455bd79275
 
 
 # Installation
