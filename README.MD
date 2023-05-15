@@ -30,12 +30,14 @@ Drop the binary somewhere in your path. The binaries are named ps-gpt by default
   - You can use content piped from a previous command as the prompt text: `echo "Give me a list of wine grapes" | gpt`
   - If no prompt is provided, "chat mode" is initialized and you can type in the prompt in the chat
 - Chat mode
-  - If you input your prompt as a parameter, the application will by default write the result into stdout and exit. If you want to continue the conversation use chat mode (`-c`)
+  - If you do not offer a prompt to the command line tool, it will enter chat mode and allow you to type your prompt in-app.
+  - If you input your prompt as a parameter, the application will by default write the result into stdout and exit. If you want to continue the conversation afterwards use chat mode (`-c`)
   - Multiline input is started and ended with a line with only one backtick (`)
   - Input `exit` / `quit` / `q` / `done` (or ctrl+c for a more ... uncivilized solution) to quit the program
 - Templates
   - Templates are a way to reuse instructions that work very well
   - A template should contain the characters `{text}` somewhere which will be replaced by the prompt read from arguments, pipeline or chat mode.
+  - You can either read a template from a file with `-t ~/templatefile.txt` or set a default template with `gpt --set-profile default_prompt_template` to leverage templates
 - System prompt is a way to give persistent instructions for a conversation
   - `gpt --system-prompt "You are a scottish assistant that speaks with a thick scottish accent"` initializes conversation with a scottish assistant using a system message 
   - System prompt works poorly in gpt 3.5 but better in gpt-4
