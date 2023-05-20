@@ -10,14 +10,14 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>gpt</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
-    <Version>1.0.6</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <!-- Nuget package & release -->
   <PropertyGroup>
       <PackageReadmeFile>README.md</PackageReadmeFile>
       <PackageLicenseExpression>MIT</PackageLicenseExpression>
-      <PackageReleaseNotes>Handle pipeline input and output gracefully</PackageReleaseNotes>
+      <PackageReleaseNotes>Better profile control options, support chat when piping input, templates, </PackageReleaseNotes>
       <Authors>Otto Teinonen (firstname.lastname@gmail.com)</Authors>
       <RepositoryUrl>https://github.com/oteinone/ps-gpt.git</RepositoryUrl>
       <RepositoryType>git</RepositoryType>
