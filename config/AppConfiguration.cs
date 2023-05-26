@@ -1,53 +1,45 @@
-using System.Configuration;
+using System.Text.Json;
 
 namespace PowershellGpt.Config;
 
-public partial class AppConfiguration
+public class AppConfiguration
 {
-    private static Lazy<Configuration> execonfig = new Lazy<Configuration>(() => ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None));
-    private static Configuration Config => execonfig.Value;
+    
+    private static PsGptConfiguration Configuration { get; set; } = GetConfig();
+    public static AppConfigSection AppConfig => Configuration.AppConfig;
+    public static ModelConfigSection ModelConfig => Configuration.ModelConfig;
 
-    private static Lazy<AppConfiguration.GptConfigSection> _gptConfig = new Lazy<AppConfiguration.GptConfigSection>(
-        () => AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>());
+    private static string ConfigFileFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ps-gpt");
+    private static string ConfigFileLocation => Path.Combine(ConfigFileFolder, "ps-gpt.config");
 
-    public static AppConfiguration.GptConfigSection GptConfig => _gptConfig.Value;
-
-
-    public static T GetOrCreateConfigSection<T>()
-        where T: ConfigurationSection, INamedConfigSection, new()
+    private static PsGptConfiguration GetConfig()
     {
-        if (Config.Sections[T.GetSectionName()] == null)
+        if (File.Exists(ConfigFileLocation))
         {
-            Config.Sections.Add(T.GetSectionName(), new T());
+            using var fileStream = new FileStream(ConfigFileLocation, FileMode.Open, FileAccess.Read);
+            return JsonSerializer.Deserialize<PsGptConfiguration>(fileStream) ?? new PsGptConfiguration();
         }
-        return (T) Config.Sections[T.GetSectionName()];
+        else
+        {
+            return new PsGptConfiguration();
+        }
     }
 
     public static void SaveAll()
     {
-        Config.Save(ConfigurationSaveMode.Modified);
+        if (!Directory.Exists(ConfigFileFolder))
+        {
+            Directory.CreateDirectory(ConfigFileFolder);
+        }
+
+        using (var saveStream = new FileStream(ConfigFileLocation, FileMode.Create, FileAccess.Write))
+        {
+            JsonSerializer.Serialize<PsGptConfiguration>(saveStream, Configuration);
+        }
     }
 
     public static void ClearAll()
     {
-        Config.Sections.Remove(AppConfiguration.GptConfigSection.GetSectionName());
-        Config.Sections.Remove(ModelConfigSection.GetSectionName());
+        File.Delete(ConfigFileLocation);
     }
-
-    public static void Clear<T>()
-        where T: ConfigurationSection, INamedConfigSection, new()
-    {
-        Config.Sections.Remove(T.GetSectionName());
-    }
-
-    public partial class GptConfigSection
-    {
-        // Implementation in GptConfigSection.cs
-    }
-
-    public partial class ModelConfigSection
-    {
-        // Implementation in ModelConfigSection
-    }
-
 }

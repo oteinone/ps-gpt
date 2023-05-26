@@ -14,7 +14,7 @@ public class AzureAiClient
     private Task<Response<StreamingChatCompletions>>? initTask;
     private bool initCompleted = false;
 
-    public AzureAiClient(GptEndpointType? type, string endpointUrl, string modelDeploymentName, string key,
+    public AzureAiClient(GptEndpointType? type, string? endpointUrl, string? modelDeploymentName, string? key,
         string? systemPrompt = null)
     {
         _ = endpointUrl ?? throw new ArgumentNullException("openAiEndpointUrl");
@@ -41,7 +41,7 @@ public class AzureAiClient
             throw new Exception ("Could not initialize open ai client", e);
         }
 
-        var modelConfig = AppConfiguration.GetOrCreateConfigSection<AppConfiguration.ModelConfigSection>();
+        var modelConfig = AppConfiguration.ModelConfig;
         options = new ChatCompletionsOptions()
         {
             Messages = { },

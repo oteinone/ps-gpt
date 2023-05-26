@@ -19,8 +19,8 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         Application.EnsureValidConfiguration();
 
         // Initialize client
-        var azureAiClient = new AzureAiClient(AppConfiguration.GptConfig.EndpointType, AppConfiguration.GptConfig.EndpointUrl, AppConfiguration.GptConfig.Model,
-            AppConfiguration.GptConfig.ApiKey!, settings.SystemPrompt ?? AppConfiguration.GptConfig.DefaultSystemPrompt);
+        var azureAiClient = new AzureAiClient(AppConfiguration.AppConfig.EndpointType, AppConfiguration.AppConfig.EndpointUrl, AppConfiguration.AppConfig.Model,
+            AppConfiguration.AppConfig.ApiKey!, settings.SystemPrompt ?? AppConfiguration.AppConfig.DefaultSystemPrompt);
 
 
         var template = await GetTemplate(settings);
@@ -67,11 +67,11 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
            
         while(true)
         {
-            if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.GptConfig.ExitTerms.Contains(text?.ToLower()))
+            if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.AppConfig.ExitTerms.Contains(userPrompt.ToLower()))
             {
                 break;
             }
-            else if (text == AppConfiguration.GptConfig.MultilineIndicator)
+            else if (text == AppConfiguration.AppConfig.MultilineIndicator)
             {
                 userPrompt = Application.ReadMultiline();
             }
@@ -123,29 +123,29 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         {
             return await Application.GetTemplate(settings.Template);
         }
-        else if (!string.IsNullOrWhiteSpace(AppConfiguration.GptConfig.DefaultAppPrompt))
+        else if (!string.IsNullOrWhiteSpace(AppConfiguration.AppConfig.DefaultAppPrompt))
         {
-            return AppConfiguration.GptConfig.DefaultAppPrompt;
+            return AppConfiguration.AppConfig.DefaultAppPrompt;
         }
         return null;
     }
 
     private static void PrintGptProfile()
     {
-        var gptConfig = AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>();
+        var gptConfig = AppConfiguration.AppConfig;
         Application.PrintProfile(new string[6,2]{
             { Const.EndpointType, gptConfig.EndpointType.ToString() ?? string.Empty },
-            { Const.Model, gptConfig.Model },
-            { Const.EndpointUrl, gptConfig.EndpointType == GptEndpointType.OpenAIApi ? "<OpenAI Api>" : gptConfig.EndpointUrl },
+            { Const.Model, gptConfig.Model ?? "" },
+            { Const.EndpointUrl, gptConfig.EndpointType == GptEndpointType.OpenAIApi ? "<OpenAI Api>" : gptConfig.EndpointUrl ?? "" },
             { Const.ApiKey, gptConfig.CensoredApiKey},
-            { Const.DefaultPrompt, gptConfig.DefaultAppPrompt },
-            { Const.DefaultSystemPrompt, gptConfig.DefaultSystemPrompt }
+            { Const.DefaultPrompt, gptConfig.DefaultAppPrompt ?? "" },
+            { Const.DefaultSystemPrompt, gptConfig.DefaultSystemPrompt ?? "" }
         });
     }
 
     private static void SetGptProfile(string? pipedText, Options settings)
     {
-        var gptConfig = AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>();
+        var gptConfig = AppConfiguration.AppConfig;
         string setting;
         string? value;
 

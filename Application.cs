@@ -11,7 +11,7 @@ public static class Application
     // Makes sure that the current profile has all necessary parameters available to operate
     public static void EnsureValidConfiguration()
     {
-        var config = GptConfiguration;
+        var config = AppConfiguration.AppConfig;
 
          if (config.EndpointType == null || (config.EndpointType == GptEndpointType.AzureOpenAI && string.IsNullOrEmpty(config.EndpointUrl))
             || string.IsNullOrEmpty(config.Model) || string.IsNullOrEmpty(config.ApiKey))
@@ -78,7 +78,7 @@ public static class Application
         var panel = new Panel(markup);
         panel.Expand();
         panel.Border = BoxBorder.None;
-        panel.PadLeft(GptConfiguration.ResponsePadding);
+        panel.PadLeft(AppConfiguration.AppConfig.ResponsePadding);
 
         // Panel does not really work alone with live view so we use a table as well
         var table = new Table();
@@ -109,7 +109,7 @@ public static class Application
             while (!sr.EndOfStream)
             {
                 var input = sr.ReadLine();
-                if (input == GptConfiguration.MultilineIndicator)
+                if (input == AppConfiguration.AppConfig.MultilineIndicator)
                     return result;
                 else
                     result += input + Environment.NewLine;
@@ -177,9 +177,6 @@ public static class Application
         prompt.AddChoices(Enum.GetValues<T>());
         return AnsiConsole.Prompt(prompt);
     }
-
-    private static AppConfiguration.GptConfigSection GptConfiguration => 
-        AppConfiguration.GetOrCreateConfigSection<AppConfiguration.GptConfigSection>();
 }
 
 public class ApplicationInitializationException : Exception

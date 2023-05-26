@@ -1,101 +1,30 @@
 using System.Configuration;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace PowershellGpt.Config;
 
-public partial class AppConfiguration
+public partial class ModelConfigSection : INamedConfigSection
 {
-    public partial class ModelConfigSection : ConfigurationSection, INamedConfigSection
-    {
-        public static string GetSectionName() => "ModelConfig";
+    public static string GetSectionName() => "ModelConfig";
 
-        public ModelConfigSection()
-        {
-        }
+    [JsonPropertyName("temperature")]
+    public float Temperature { get; set; } = 0.7f;
 
-        [ConfigurationProperty("temperature",
-        IsRequired = false,
-        DefaultValue = 0.7f,
-        IsKey = false)]
-        public float Temperature
-        {
-            get
-            {
-                return (float) this["temperature"];
-            }
-            set
-            {
-                this["temperature"] = value;
-            }
-        }
+    [JsonPropertyName("maxTokenCount")]
 
-        [ConfigurationProperty("maxTokenCount",
-        IsRequired = false,
-        DefaultValue = 2000,
-        IsKey = false)]
+    public int MaxTokenCount { get; set; } = 2000;
 
-        public int MaxTokenCount
-        {
-            get
-            {
-                return (int) this["maxTokenCount"];
-            }
-            set
-            {
-                this["maxTokenCount"] = value;
-            }
-        }
+    [JsonPropertyName("nucleusSamplingFactor")]
 
-        [ConfigurationProperty("nucleusSamplingFactor",
-        IsRequired = false,
-        DefaultValue = 0.95f,
-        IsKey = false)]
+    public float NucleusSamplingFactor { get; set; } = 0.95f;
 
-        public float NucleusSamplingFactor
-        {
-            get
-            {
-                return (float) this["nucleusSamplingFactor"];
-            }
-            set
-            {
-                this["nucleusSamplingFactor"] = value;
-            }
-        }
+    [JsonPropertyName("frequencyPenalty")]
 
-        [ConfigurationProperty("frequencyPenalty",
-        IsRequired = false,
-        DefaultValue = 0f,
-        IsKey = false)]
+    public float FrequencyPenalty { get; set; } = 0f;
 
-        public float FrequencyPenalty
-        {
-            get
-            {
-                return (float) this["frequencyPenalty"];
-            }
-            set
-            {
-                this["frequencyPenalty"] = value;
-            }
-        }
+    [JsonPropertyName("presencePenalty")]
 
-        [ConfigurationProperty("presencePenalty",
-        IsRequired = false,
-        DefaultValue = 0f,
-        IsKey = false)]
-
-        public float PresencePenalty
-        {
-            get
-            {
-                return (float) this["presencePenalty"];
-            }
-            set
-            {
-                this["presencePenalty"] = value;
-            }
-        }
-    }
+    public float PresencePenalty { get; set; } = 0f;
 }
