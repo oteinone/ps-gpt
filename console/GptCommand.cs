@@ -90,7 +90,6 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         if (settings.Clear)
         {
             AppConfiguration.ClearAll();
-            AppConfiguration.SaveAll();
             Console.WriteLine("Configuration cleared");
             return 0;
         }

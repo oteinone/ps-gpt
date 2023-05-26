@@ -16,13 +16,22 @@ public class AppConfiguration
     {
         if (File.Exists(ConfigFileLocation))
         {
-            using var fileStream = new FileStream(ConfigFileLocation, FileMode.Open, FileAccess.Read);
-            return JsonSerializer.Deserialize<PsGptConfiguration>(fileStream) ?? new PsGptConfiguration();
+            bool invalidFile = false;
+            using (var fileStream = new FileStream(ConfigFileLocation, FileMode.Open, FileAccess.Read))
+            {
+                if (fileStream.Length < 3)
+                {
+                    invalidFile = true;
+                }
+                else
+                {
+                    var fileConfig = JsonSerializer.Deserialize<PsGptConfiguration>(fileStream);
+                    if (fileConfig != null) return fileConfig;
+                }    
+            }
+            if (invalidFile) ClearAll();
         }
-        else
-        {
-            return new PsGptConfiguration();
-        }
+        return new PsGptConfiguration();
     }
 
     public static void SaveAll()
