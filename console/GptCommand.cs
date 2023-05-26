@@ -62,15 +62,16 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         // First loop, use template and input text when appropriate
         string userPrompt = GetUserMessage(
             (string.IsNullOrWhiteSpace(text) ? Application.AskUser() : text) ?? string.Empty,
-            template);
+            template
+            );
            
         while(true)
         {
-            if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.GptConfig.ExitTerms.Contains(userPrompt.ToLower()))
+            if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.GptConfig.ExitTerms.Contains(text?.ToLower()))
             {
                 break;
             }
-            else if (userPrompt == AppConfiguration.GptConfig.MultilineIndicator)
+            else if (text == AppConfiguration.GptConfig.MultilineIndicator)
             {
                 userPrompt = Application.ReadMultiline();
             }
