@@ -4,34 +4,32 @@ namespace PowershellGpt.Config;
 
 public class AppConfiguration
 {
-    
-    private static PsGptConfiguration Configuration { get; set; } = GetConfig();
-    public static AppConfigSection AppConfig => Configuration.AppConfig;
-    public static ModelConfigSection ModelConfig => Configuration.ModelConfig;
+    public static AppConfigSection AppConfig => _configuration.AppConfig;
+    public static ModelConfigSection ModelConfig => _configuration.ModelConfig;
+
+    private static PsGptConfiguration _configuration = GetConfig();
 
     private static string ConfigFileFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ps-gpt");
     private static string ConfigFileLocation => Path.Combine(ConfigFileFolder, "ps-gpt.config");
 
     private static PsGptConfiguration GetConfig()
     {
+        var config = new PsGptConfiguration();
         if (File.Exists(ConfigFileLocation))
         {
-            bool invalidFile = false;
             using (var fileStream = new FileStream(ConfigFileLocation, FileMode.Open, FileAccess.Read))
             {
                 if (fileStream.Length < 3)
                 {
-                    invalidFile = true;
+                    ClearAll();
                 }
                 else
                 {
-                    var fileConfig = JsonSerializer.Deserialize<PsGptConfiguration>(fileStream);
-                    if (fileConfig != null) return fileConfig;
+                    config = JsonSerializer.Deserialize<PsGptConfiguration>(fileStream) ?? config;
                 }    
             }
-            if (invalidFile) ClearAll();
         }
-        return new PsGptConfiguration();
+        return config;
     }
 
     public static void SaveAll()
@@ -40,15 +38,15 @@ public class AppConfiguration
         {
             Directory.CreateDirectory(ConfigFileFolder);
         }
-
         using (var saveStream = new FileStream(ConfigFileLocation, FileMode.Create, FileAccess.Write))
         {
-            JsonSerializer.Serialize<PsGptConfiguration>(saveStream, Configuration);
+            JsonSerializer.Serialize<PsGptConfiguration>(saveStream, _configuration);
         }
     }
 
     public static void ClearAll()
     {
         File.Delete(ConfigFileLocation);
+        _configuration = new PsGptConfiguration();
     }
 }
