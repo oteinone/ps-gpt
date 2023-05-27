@@ -94,27 +94,28 @@ public static class Application
         AnsiConsole.Write(new Rule($"[green]{message}[/]").LeftJustified());
     }
 
-    public static string? AskUser()
+    public static string AskUser()
     {
         Console.Write(">> ");
-        return Console.ReadLine();
+        return Console.ReadLine() ?? string.Empty;
         //return AnsiConsole.Ask<string>("[purple]>>[/]");
     }
 
     public static string ReadMultiline()
     {
-        string result = "";
+        StringBuilder result = new StringBuilder();
         using (var sr = new StreamReader(Console.OpenStandardInput(), Console.InputEncoding))
         {
             while (!sr.EndOfStream)
             {
                 var input = sr.ReadLine();
                 if (input == AppConfiguration.AppConfig.MultilineIndicator)
-                    return result;
-                else
-                    result += input + Environment.NewLine;
+                {
+                    break;
+                }
+                result.AppendLine(input);
             }
-            return result;
+            return result.ToString();
         }
     }
 
