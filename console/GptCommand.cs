@@ -61,23 +61,24 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
 
         // First loop, use template and input text when appropriate
         string userPrompt = GetUserMessage(
-            (string.IsNullOrWhiteSpace(text) ? Application.AskUser() : text) ?? string.Empty,
+            (string.IsNullOrWhiteSpace(text) ? (text = Application.AskUser()) : text) ?? string.Empty,
             template
             );
-           
+
         while(true)
         {
-            if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.AppConfig.ExitTerms.Contains(userPrompt.ToLower()))
+            if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.AppConfig.ExitTerms.Contains(userPrompt.ToLower())
+                || AppConfiguration.AppConfig.ExitTerms.Contains(text?.ToLower()))
             {
                 break;
             }
             else if (text == AppConfiguration.AppConfig.MultilineIndicator)
             {
-                userPrompt = Application.ReadMultiline();
+                userPrompt = GetUserMessage(Application.ReadMultiline(), template);
             }
             builder = await Application.StreamChatAnswerToScreenAsync(azureAiClient.Ask(userPrompt));
             // get input for next loop
-            userPrompt = Application.AskUser() ?? string.Empty;
+            userPrompt = text = Application.AskUser() ?? string.Empty;
         }
 
         Application.WriteHorizontalDivider("Chat conversation done");
