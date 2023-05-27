@@ -19,8 +19,12 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         Application.EnsureValidConfiguration();
 
         // Initialize client
-        var azureAiClient = new AzureAiClient(AppConfiguration.AppConfig.EndpointType, AppConfiguration.AppConfig.EndpointUrl, AppConfiguration.AppConfig.Model,
-            AppConfiguration.AppConfig.ApiKey!, settings.SystemPrompt ?? AppConfiguration.AppConfig.DefaultSystemPrompt);
+        var azureAiClient = new AzureAiClient(
+            AppConfiguration.AppConfig.EndpointType,
+            AppConfiguration.AppConfig.EndpointUrl,
+            AppConfiguration.AppConfig.Model,
+            AppConfiguration.AppConfig.ApiKey!,
+            settings.SystemPrompt ?? AppConfiguration.AppConfig.DefaultSystemPrompt);
 
 
         var template = await GetTemplate(settings);
@@ -57,13 +61,11 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         Application.WriteHorizontalDivider("Ask ChatGPT");
         
         // Main program loop
-        StringBuilder builder;
-
         // First loop, use template and input text when appropriate
         string userPrompt = GetUserMessage(
-            (string.IsNullOrWhiteSpace(text) ? (text = Application.AskUser()) : text) ?? string.Empty,
+            text = text ?? Application.AskUser(),
             template
-            );
+        );
 
         while(true)
         {
@@ -72,13 +74,14 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
             {
                 break;
             }
-            else if (text == AppConfiguration.AppConfig.MultilineIndicator)
+            
+            if (text == AppConfiguration.AppConfig.MultilineIndicator)
             {
                 userPrompt = GetUserMessage(Application.ReadMultiline(), template);
             }
-            builder = await Application.StreamChatAnswerToScreenAsync(azureAiClient.Ask(userPrompt));
+            await Application.StreamChatAnswerToScreenAsync(azureAiClient.Ask(userPrompt));
             // get input for next loop
-            userPrompt = text = Application.AskUser() ?? string.Empty;
+            userPrompt = text = Application.AskUser();
         }
 
         Application.WriteHorizontalDivider("Chat conversation done");
