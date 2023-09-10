@@ -137,12 +137,12 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
     {
         var gptConfig = AppConfiguration.AppConfig;
         Application.PrintProfile(new string[6,2]{
-            { Const.EndpointType, gptConfig.EndpointType.ToString() ?? string.Empty },
-            { Const.Model, gptConfig.Model ?? "" },
-            { Const.EndpointUrl, gptConfig.EndpointType == GptEndpointType.OpenAIApi ? "<OpenAI Api>" : gptConfig.EndpointUrl ?? "" },
-            { Const.ApiKey, gptConfig.CensoredApiKey},
-            { Const.DefaultPrompt, gptConfig.DefaultAppPrompt ?? "" },
-            { Const.DefaultSystemPrompt, gptConfig.DefaultSystemPrompt ?? "" }
+            { ConfigurationConst.EndpointType, gptConfig.EndpointType.ToString() ?? string.Empty },
+            { ConfigurationConst.Model, gptConfig.Model ?? "" },
+            { ConfigurationConst.EndpointUrl, gptConfig.EndpointType == GptEndpointType.OpenAIApi ? "<OpenAI Api>" : gptConfig.EndpointUrl ?? "" },
+            { ConfigurationConst.ApiKey, gptConfig.CensoredApiKey},
+            { ConfigurationConst.DefaultPrompt, gptConfig.DefaultAppPrompt ?? "" },
+            { ConfigurationConst.DefaultSystemPrompt, gptConfig.DefaultSystemPrompt ?? "" }
         });
     }
 
@@ -179,23 +179,23 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         
         switch(setting.ToLower())
         {
-            case Const.Model:
+            case ConfigurationConst.Model:
                 gptConfig.Model = value;
                 AppConfiguration.SaveAll();
                 break;
-            case Const.EndpointUrl:
+            case ConfigurationConst.EndpointUrl:
                 gptConfig.EndpointUrl = value;
                 AppConfiguration.SaveAll();
                 break;
-            case Const.ApiKey:
+            case ConfigurationConst.ApiKey:
                 gptConfig.ApiKey = value;
                 AppConfiguration.SaveAll();
                 break;
-            case Const.DefaultPrompt:
+            case ConfigurationConst.DefaultPrompt:
                 gptConfig.DefaultAppPrompt = value;
                 AppConfiguration.SaveAll();
                 break;
-            case Const.DefaultSystemPrompt:
+            case ConfigurationConst.DefaultSystemPrompt:
                 gptConfig.DefaultSystemPrompt = value;
                 AppConfiguration.SaveAll();
                 break;

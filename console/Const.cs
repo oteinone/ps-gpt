@@ -1,6 +1,6 @@
 namespace PowershellGpt.ConsoleApp;
 
-public static class Const
+public static class ConfigurationConst
 {
     public const string EndpointType = "endpoint_type";
     public const string EndpointUrl = "endpoint_url";
