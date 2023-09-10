@@ -1,5 +1,6 @@
-﻿$releases = "win-x64","win-x86","linux-x64","osx-x64"
+﻿cd src;
 
+$releases = "win-x64","win-x86","linux-x64","osx-x64"
 foreach($rid in $releases) {
     dotnet publish `
         -c Release `
