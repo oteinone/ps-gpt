@@ -7,31 +7,29 @@ namespace PowershellGpt.AzureAi;
 public class AzureAiClient
 {
     private readonly string ModelName;
-    private readonly string Endpoint;
+    private readonly string EndpointUrl;
     private readonly ChatCompletionsOptions options;
 
     private OpenAIClient client;
     private Task<Response<StreamingChatCompletions>>? initTask;
     private bool initCompleted = false;
 
-    public AzureAiClient(GptEndpointType? type, string? endpointUrl, string? modelDeploymentName, string? key,
+    public AzureAiClient(GptEndpointType type, string modelDeploymentName, string key, string? endpointUrl = null,
         string? systemPrompt = null)
     {
-        _ = endpointUrl ?? throw new ArgumentNullException("openAiEndpointUrl");
-        _ = modelDeploymentName ?? throw new ArgumentNullException("openAiDeploymentModelName");
-        _ = key ?? throw new ArgumentNullException("azureOpenAiKey");
-    
         ModelName = modelDeploymentName;
-        Endpoint = endpointUrl;
         
         try 
         {
             if (type == GptEndpointType.OpenAIApi)
             {
+                EndpointUrl = "<OpenAI endpoint>";
                 client = new OpenAIClient(key);
             }
             else
             {
+                _ = endpointUrl ?? throw new ArgumentNullException("openAiEndpointUrl");
+                EndpointUrl = endpointUrl;
                 client = new OpenAIClient(new Uri(endpointUrl), new AzureKeyCredential(key));
             }
 
@@ -41,7 +39,7 @@ public class AzureAiClient
             throw new Exception ("Could not initialize open ai client", e);
         }
 
-        var modelConfig = AppConfiguration.ModelConfig;
+        var modelConfig = AppConfiguration.AppConfig.ModelConfig;
         options = new ChatCompletionsOptions()
         {
             Messages = { },
@@ -107,7 +105,7 @@ public class AzureAiClient
         {
             if (e.Status == 401)
             {
-                throw new AuthorizationFailedException($"Could not authorize to open api endpoint {Endpoint} model {ModelName}", e);
+                throw new AuthorizationFailedException($"Could not authorize to open api endpoint {EndpointUrl} model {ModelName}", e);
             }
             throw;
         }

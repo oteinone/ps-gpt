@@ -5,7 +5,6 @@ namespace PowershellGpt.Config;
 public class AppConfiguration
 {
     public static AppConfigSection AppConfig => _configuration.AppConfig;
-    public static ModelConfigSection ModelConfig => _configuration.ModelConfig;
 
     private static PsGptConfiguration _configuration = GetConfig();
 

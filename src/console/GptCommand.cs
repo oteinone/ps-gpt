@@ -20,10 +20,10 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
 
         // Initialize client
         var azureAiClient = new AzureAiClient(
-            AppConfiguration.AppConfig.EndpointType,
+            AppConfiguration.AppConfig.EndpointType ?? throw new ArgumentException("AppConfig.EndpointType should have been defined but it is null"),
+            AppConfiguration.AppConfig.Model ?? throw new ArgumentException("AppConfig.Model should have been defined but it is null"),
+            AppConfiguration.AppConfig.ApiKey ?? throw new ArgumentException("AppConfig.ApiKey should have been defined but it is null"),
             AppConfiguration.AppConfig.EndpointUrl,
-            AppConfiguration.AppConfig.Model,
-            AppConfiguration.AppConfig.ApiKey!,
             settings.SystemPrompt ?? AppConfiguration.AppConfig.DefaultSystemPrompt);
 
 

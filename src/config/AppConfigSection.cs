@@ -68,6 +68,9 @@ public partial class AppConfigSection : INamedConfigSection
         return Encoding.UTF8.GetString(ProtectedData.Unprotect(Convert.FromBase64String(key), null, DataProtectionScope.CurrentUser));
     }
 
+    [JsonPropertyName("modelConfig")]
+    public ModelConfigSection ModelConfig { get; set; } = new ModelConfigSection();
+
     public static string GetSectionName() => "GptConfig";
 }
 public enum GptEndpointType {
