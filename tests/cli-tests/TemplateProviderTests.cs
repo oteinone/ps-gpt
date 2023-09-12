@@ -1,10 +1,6 @@
-using PowershellGpt.ConsoleApp;
-using Spectre.Console.Cli;
 using Moq;
-using Spectre.Console;
 using PowershellGpt.Templates;
 using System.IO.Abstractions;
-using System.Runtime.InteropServices;
 
 public class TemplateProviderTests
 {

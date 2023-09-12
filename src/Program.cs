@@ -17,7 +17,7 @@ builder.Services.AddSingleton<IAppConfigurationProvider, AppConfigurationProvide
 builder.Services.AddTransient<AppConfigSection>(sp => sp.GetRequiredService<IAppConfigurationProvider>().AppConfig);
 builder.Services.AddSingleton<IIOProvider, ConsoleIOProvider>();
 builder.Services.AddTransient<IAiClient, AzureAiClient>();
-PowershellGpt.HostContainer.Host = builder.Build();
+var host = builder.Build();
 
 // Helper function
 void DebugStackTrace(Exception e, int stackCount = 10)
@@ -29,6 +29,7 @@ void DebugStackTrace(Exception e, int stackCount = 10)
 
 // Initialize application and configuration
 var app = new CommandApp<GptCommand>();
+app.WithData(host);
 app.Configure(config => {
     config.SetApplicationName("ps-gpt");
     config.AddExample(new string[0]);

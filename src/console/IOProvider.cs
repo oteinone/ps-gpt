@@ -118,7 +118,7 @@ public class ConsoleIOProvider: IIOProvider
          if (_appConfig.EndpointType == null || (_appConfig.EndpointType == GptEndpointType.AzureOpenAI && string.IsNullOrEmpty(_appConfig.EndpointUrl))
             || string.IsNullOrEmpty(_appConfig.Model) || string.IsNullOrEmpty(_appConfig.ApiKey))
         {
-            if (Console.IsInputRedirected) throw new ApplicationInitializationException(
+            if (Console.IsInputRedirected) throw new Exception(
                 "Application configuration was incomplete, cannot accept input from pipeline. Run the application once without piped input to set application configuration");
 
             if (_appConfig.EndpointType == null)

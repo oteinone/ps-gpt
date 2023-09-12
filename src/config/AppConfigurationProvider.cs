@@ -13,15 +13,17 @@ public interface IAppConfigurationProvider
 
 public class AppConfigurationProvider : IAppConfigurationProvider
 {
-    private PsGptConfiguration _config;
-    public AppConfigSection AppConfig => _config.AppConfig;
+    private Lazy<PsGptConfiguration> _config { get; set; } 
+    private PsGptConfiguration Config => _config.Value;
+
+    public virtual AppConfigSection AppConfig => Config.AppConfig;
 
     public IFileSystem _fileSystem;
     
     public AppConfigurationProvider(IFileSystem fileSystem)
     {
-        _config = GetConfig();
         _fileSystem = fileSystem;
+        _config = new Lazy<PsGptConfiguration>(() => GetConfig());
     }
 
     private PsGptConfiguration GetConfig()
@@ -36,14 +38,14 @@ public class AppConfigurationProvider : IAppConfigurationProvider
                 }
                 else
                 {
-                    return JsonSerializer.Deserialize<PsGptConfiguration>(fileStream) ?? _config;
+                    return JsonSerializer.Deserialize<PsGptConfiguration>(fileStream) ?? Config;
                 }    
             }
         }
         return new PsGptConfiguration();
     }
 
-    public void SaveAll()
+    public virtual void SaveAll()
     {
         if (!_fileSystem.Directory.Exists(ConfigFileFolder))
         {
@@ -51,16 +53,16 @@ public class AppConfigurationProvider : IAppConfigurationProvider
         }
         using (var saveStream = _fileSystem.FileStream.New(ConfigFileLocation, FileMode.Create, FileAccess.Write))
         {
-            JsonSerializer.Serialize<PsGptConfiguration>(saveStream, _config);
+            JsonSerializer.Serialize<PsGptConfiguration>(saveStream, Config);
         }
     }
 
-    public void ClearAll()
+    public virtual void ClearAll()
     {
         _fileSystem.File.Delete(ConfigFileLocation);
-        _config = new PsGptConfiguration();
+        _config = new Lazy<PsGptConfiguration>(() => GetConfig());
     }
     
-    private string ConfigFileFolder => _fileSystem.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ps-gpt");
-    private string ConfigFileLocation => _fileSystem.Path.Combine(ConfigFileFolder, "ps-gpt.config");
+    private string ConfigFileFolder => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ps-gpt");
+    private string ConfigFileLocation => Path.Combine(ConfigFileFolder, "ps-gpt.config");
 }

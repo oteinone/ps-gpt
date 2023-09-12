@@ -1,31 +1,32 @@
-using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
-using System.Text;
-using PowershellGpt.AzureAi;
+using Microsoft.Extensions.Hosting;
 using PowershellGpt.Config;
-using PowershellGpt.Templates;
 using Spectre.Console.Cli;
 
 namespace PowershellGpt.ConsoleApp;
 
-public class GptCommand : AsyncCommand<GptCommand.Options>
+public class GptCommand : AsyncCommand<GptCommandOptions>
 {
-    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] Options settings)
+    public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] GptCommandOptions settings)
     {
+        // Get DI host configuration from the context
+        var host = (IHost) context.Data!;
+
         // See if user has requested config commands and return if they are succesfully completed
-        var configResult = await HandleConfigCommands(settings);
+        var configResult = await HandleConfigCommands(host, settings);
         if (configResult >= 0) return configResult;
 
-        var io = Services.IOProvider;
+
+        var io = host.GetIOProvider();
         
         // Make sure GptConfigSection is populated
         io.EnsureValidConfiguration();
-        Services.AppConfigurationProvider.SaveAll();
+        host.GetAppConfigurationProvider().SaveAll();
 
-        var appConfig = Services.Configuration;
+        var appConfig = host.GetConfiguration();
 
         // Initialize client
-        var azureAiClient = Services.AiClient;
+        var azureAiClient = host.GetAiClient();
 
         var systemPrompt = settings.SystemPrompt ?? appConfig.DefaultSystemPrompt;
         if (systemPrompt != null)
@@ -33,7 +34,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
             azureAiClient.InitSystemPrompt(systemPrompt);
         }
 
-        var templateProvider = Services.TemplateProvider;
+        var templateProvider = host.GetTemplateProvider()   ;
         string? text = null;
 
         if (io.IsConsoleInputRedirected) //Handle text from stdin
@@ -96,34 +97,34 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         return 0;
     }
 
-    private static async Task<int> HandleConfigCommands(Options settings)
+    private static async Task<int> HandleConfigCommands(IHost host, GptCommandOptions settings)
     {
         if (settings.Clear)
         {
-            Services.AppConfigurationProvider.ClearAll();
+            host.GetAppConfigurationProvider().ClearAll();
             Console.WriteLine("Configuration cleared");
             return 0;
         }
         else if (settings.GetProfile)
         {
-            PrintGptProfile();
+            PrintGptProfile(host);
             return 0;
         }
         else if (!string.IsNullOrEmpty(settings.SetProfile))
         {
-            var io = Services.IOProvider;
+            var io = host.GetIOProvider();
             string? pipedText = io.IsConsoleInputRedirected ? await io.ReadPipedInputAsync() : null;
-            SetGptProfile(pipedText, settings);
-            PrintGptProfile();
+            SetGptProfile(host, pipedText, settings);
+            PrintGptProfile(host);
             return 0;
         }
         return -1;
     }
 
-    private static void PrintGptProfile()
+    private static void PrintGptProfile(IHost host)
     {
-        var gptConfig = Services.Configuration;
-        Services.IOProvider.PrintProfile(new string[6,2]{
+        var gptConfig = host.GetConfiguration();
+        host.GetIOProvider().PrintProfile(new string[6,2]{
             { ConfigurationConst.EndpointType, gptConfig.EndpointType.ToString() ?? string.Empty },
             { ConfigurationConst.Model, gptConfig.Model ?? "" },
             { ConfigurationConst.EndpointUrl, gptConfig.EndpointType == GptEndpointType.OpenAIApi ? "<OpenAI Api>" : gptConfig.EndpointUrl ?? "" },
@@ -133,9 +134,9 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         });
     }
 
-    private static void SetGptProfile(string? pipedText, Options settings)
+    private static void SetGptProfile(IHost host, string? pipedText, GptCommandOptions settings)
     {
-        var gptConfig = Services.Configuration;
+        var gptConfig = host.GetConfiguration();
         string setting;
         string? value;
 
@@ -164,7 +165,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
             }
         }
         
-        var appConfigurationProvider = Services.AppConfigurationProvider;
+        var appConfigurationProvider = host.GetAppConfigurationProvider();
         switch(setting.ToLower())
         {
             case ConfigurationConst.Model:
@@ -190,38 +191,5 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
             default:
                 throw new Exception($"Did not recognize profile setting {setting}");
         }
-    }
-
-    public class Options : CommandSettings
-    {
-        [CommandArgument(0, "[text]")]
-        [Description("The text prompt sent to the specified model. Potentially preceded/surrounded by a prompt template if one has been defined.")]
-        public string? Text { get; init; }
-
-        [CommandOption("--clear")]
-        [Description("Clears the current profile and resets the config to default values")]
-        [DefaultValue(false)]
-        public bool Clear { get; init; }
-
-        [CommandOption("--get-profile|-g")]
-        [Description("Shows the current profile settings saved in application configuration")]
-        [DefaultValue(false)]
-        public bool GetProfile { get; init; }
-
-        [CommandOption("--set-profile|-s")]
-        [Description("Sets a value in current profile. E.g. --set-profile model=gpt-3")]
-        public string? SetProfile { get; init; }
-
-        [CommandOption("--chat|-c")]
-        [Description("Forces chat mode (continuous conversation) in cases where the input would otherwise be written to console/stdout")]
-        public bool Chat { get; set; }
-
-        [CommandOption("--system-prompt")]
-        [Description("Commands the api with a 'system' type message before initializing the actual conversation")]
-        public string? SystemPrompt { get; set; }
-
-        [CommandOption("--template|-t")]
-        [Description("A file path pointing to a template file. Template file is used as a wrapper for text content. '{text}' in templates is replaced with the text prompt")]
-        public string? Template { get; set; }
-    }
+    }    
 }

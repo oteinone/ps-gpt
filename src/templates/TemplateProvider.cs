@@ -15,7 +15,7 @@ public class TemplateProvider : ITemplateProvider
         _fileSystem = fileSystem;
     }
 
-    public async Task<string> GetUserMessage(string text, string? template_expression = null)
+    public virtual async Task<string> GetUserMessage(string text, string? template_expression = null)
     {
         if (template_expression == null) return text;
         var template = await GetTemplate(template_expression);
