@@ -1,14 +1,16 @@
+using System.IO.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
+using PowershellGpt.AzureAi;
 using PowershellGpt.Config;
 using PowershellGpt.Config.Provider;
 using PowershellGpt.ConsoleApp;
+using PowershellGpt.Templates;
 
 public class Common
 {
-
-    public static Mock<ConsoleIOProvider> BootStrap()
+    public static MockEnv Bootstrap()
     {
         var section = new AppConfigSection()
         {
@@ -17,19 +19,57 @@ public class Common
             Model = DEFAULT_MODEL,
             ApiKey = DEFAULT_API_KEY
         };
-        return BootStrap(section);
+        return Bootstrap(section);
     }
 
-    public static Mock<ConsoleIOProvider> BootStrap(AppConfigSection testConfiguration)
+    public static MockEnv Bootstrap(AppConfigSection testConfiguration)
     {
         var mockIOProvider = new Mock<ConsoleIOProvider>();
+        var mockFileSystem = new Mock<FileSystem>();
+        var mockConfigProvider = new Mock<IAppConfigurationProvider>(mockFileSystem);
+        var mockAIClient = new Mock<AzureAiClient>(mockConfigProvider.Object);
+        var mockTemplateProvider = new Mock<TemplateProvider>(mockFileSystem);
+
         // Set up DI
         HostApplicationBuilder builder = Host.CreateApplicationBuilder();
-        builder.Services.AddTransient<IAppConfigurationProvider>(sp => new DummyConfigurationProvider(testConfiguration));
-        builder.Services.AddTransient<IIOProvider>(sp => mockIOProvider.Object );
+        builder.Services.AddSingleton<ITemplateProvider>(sp => mockTemplateProvider.Object);
+        builder.Services.AddSingleton<IFileSystem>(sp => mockFileSystem.Object);
+        builder.Services.AddTransient<IAppConfigurationProvider>(sp => mockConfigProvider.Object);
+        builder.Services.AddTransient<AppConfigSection>(sp => sp.GetRequiredService<IAppConfigurationProvider>().AppConfig);
+        builder.Services.AddSingleton<IIOProvider>(sp => mockIOProvider.Object);
+        builder.Services.AddSingleton<IAiClient>(sp => mockAIClient.Object);
+
         PowershellGpt.HostContainer.Host = builder.Build();
 
-        return mockIOProvider;
+        mockAIClient.Setup(client => client.Ask(It.IsAny<string>())).Returns((string s) => new string[] { s }.ToAsyncEnumerable());
+        mockIOProvider.Setup(io => io.IsConsoleInputRedirected).Returns(false);
+        mockConfigProvider.Setup(configProvider => configProvider.AppConfig).Returns(testConfiguration);
+
+        return new MockEnv(
+            mockIOProvider,
+            mockAIClient,
+            mockConfigProvider,
+            mockTemplateProvider,
+            mockFileSystem
+        );
+    }
+
+    public class MockEnv
+    {
+        public MockEnv(Mock<ConsoleIOProvider> iOProvider, Mock<AzureAiClient> aiClient, Mock<IAppConfigurationProvider> configProvider, Mock<TemplateProvider> templateProvider, Mock<FileSystem> fileSystem)
+        {
+            IOProvider = iOProvider;
+            AiClient = aiClient;
+            ConfigProvider = configProvider;
+            TemplateProvider = templateProvider;
+            FileSystem = fileSystem;
+        }
+
+        public Mock<ConsoleIOProvider> IOProvider { get; init; }
+        public Mock<AzureAiClient> AiClient { get; init; }
+        public Mock<IAppConfigurationProvider> ConfigProvider { get; init; }
+        public Mock<TemplateProvider> TemplateProvider { get; init; }
+        public Mock<FileSystem> FileSystem { get; init; }
     }
 
     const GptEndpointType DEFAULT_ENDPOINT_TYPE = GptEndpointType.AzureOpenAI;

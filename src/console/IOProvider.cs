@@ -1,5 +1,6 @@
 using System.Text;
 using PowershellGpt.Config;
+using PowershellGpt.Config.Provider;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
@@ -20,21 +21,27 @@ public interface IIOProvider
 
 public class ConsoleIOProvider: IIOProvider
 {
-    public bool IsConsoleInputRedirected => Console.IsInputRedirected;
+    private AppConfigSection _appConfig;
+    public virtual bool IsConsoleInputRedirected => Console.IsInputRedirected;
+
+    public ConsoleIOProvider(AppConfigSection appConfig)
+    {
+        _appConfig = appConfig;
+    }
     
     public void WriteHorizontalDivider(string message)
     {
         AnsiConsole.Write(new Rule($"[green]{message}[/]").LeftJustified());
     }
 
-    public string AskUser()
+    public virtual string AskUser()
     {
         Console.Write(">> ");
         return Console.ReadLine() ?? string.Empty;
         //return AnsiConsole.Ask<string>("[purple]>>[/]");
     }
 
-    public string ReadMultiline()
+    public virtual string ReadMultiline()
     {
         StringBuilder result = new StringBuilder();
         using (var sr = new StreamReader(Console.OpenStandardInput(), Console.InputEncoding))
@@ -42,7 +49,7 @@ public class ConsoleIOProvider: IIOProvider
             while (!sr.EndOfStream)
             {
                 var input = sr.ReadLine();
-                if (input == Services.Configuration.MultilineIndicator)
+                if (input == _appConfig.MultilineIndicator)
                 {
                     break;
                 }
@@ -52,7 +59,7 @@ public class ConsoleIOProvider: IIOProvider
         }
     }
     
-    public async Task<string> ReadPipedInputAsync()
+    public virtual async Task<string> ReadPipedInputAsync()
     {
         if (Console.IsInputRedirected)
         {
@@ -62,7 +69,7 @@ public class ConsoleIOProvider: IIOProvider
         else return string.Empty;
     }
 
-    public async Task<StringBuilder> StreamChatAnswerToScreenAsync(IAsyncEnumerable<string> messageStream)
+    public virtual async Task<StringBuilder> StreamChatAnswerToScreenAsync(IAsyncEnumerable<string> messageStream)
     {
         var response = new StringBuilder(" ");
         await AnsiConsole.Live(GetRenderable("")).StartAsync(async ctx => {
@@ -79,7 +86,7 @@ public class ConsoleIOProvider: IIOProvider
         return response;
     }
 
-    public async Task StreamChatAnswerToStdOutAsync(IAsyncEnumerable<string> messageStream)
+    public virtual async Task StreamChatAnswerToStdOutAsync(IAsyncEnumerable<string> messageStream)
     {
         await foreach (var message in messageStream)
         {
@@ -108,35 +115,31 @@ public class ConsoleIOProvider: IIOProvider
     // Makes sure that the current profile has all necessary parameters available to operate
     public void EnsureValidConfiguration()
     {
-        var config = Services.Configuration;
-
-         if (config.EndpointType == null || (config.EndpointType == GptEndpointType.AzureOpenAI && string.IsNullOrEmpty(config.EndpointUrl))
-            || string.IsNullOrEmpty(config.Model) || string.IsNullOrEmpty(config.ApiKey))
+         if (_appConfig.EndpointType == null || (_appConfig.EndpointType == GptEndpointType.AzureOpenAI && string.IsNullOrEmpty(_appConfig.EndpointUrl))
+            || string.IsNullOrEmpty(_appConfig.Model) || string.IsNullOrEmpty(_appConfig.ApiKey))
         {
             if (Console.IsInputRedirected) throw new ApplicationInitializationException(
                 "Application configuration was incomplete, cannot accept input from pipeline. Run the application once without piped input to set application configuration");
 
-            if (config.EndpointType == null)
+            if (_appConfig.EndpointType == null)
             {
-                config.EndpointType = SelectFromEnum<GptEndpointType>("Which type of endpoint are you using");
+                _appConfig.EndpointType = SelectFromEnum<GptEndpointType>("Which type of endpoint are you using");
             }
             // Openai endpoint url is hardcoded into library so it is not necessary to ask user the api url
-            if (config.EndpointType == GptEndpointType.AzureOpenAI &&
-                string.IsNullOrEmpty(config.EndpointUrl))
+            if (_appConfig.EndpointType == GptEndpointType.AzureOpenAI &&
+                string.IsNullOrEmpty(_appConfig.EndpointUrl))
             {
-                config.EndpointUrl = GetSettingString("API Endpoint");
+                _appConfig.EndpointUrl = GetSettingString("API Endpoint");
             }
-            if (string.IsNullOrEmpty(config.Model))
+            if (string.IsNullOrEmpty(_appConfig.Model))
             {
-                config.Model = GetSettingString(
-                    config.EndpointType == GptEndpointType.AzureOpenAI ? "Deployment name" : "Model name");
+                _appConfig.Model = GetSettingString(
+                    _appConfig.EndpointType == GptEndpointType.AzureOpenAI ? "Deployment name" : "Model name");
             }
-            if (string.IsNullOrEmpty(config.ApiKey))
+            if (string.IsNullOrEmpty(_appConfig.ApiKey))
             {
-                config.ApiKey = GetSettingString("API Key", true);
+                _appConfig.ApiKey = GetSettingString("API Key", true);
             }
-
-            Services.AppConfigurationProvider.SaveAll();
         }
     }
     
@@ -149,7 +152,7 @@ public class ConsoleIOProvider: IIOProvider
         var panel = new Panel(markup);
         panel.Expand();
         panel.Border = BoxBorder.None;
-        panel.PadLeft(Services.Configuration.ResponsePadding);
+        panel.PadLeft(_appConfig.ResponsePadding);
 
         // Panel does not really work alone with live view so we use a table as well
         var table = new Table();

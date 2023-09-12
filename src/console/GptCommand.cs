@@ -20,6 +20,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         
         // Make sure GptConfigSection is populated
         io.EnsureValidConfiguration();
+        Services.AppConfigurationProvider.SaveAll();
 
         var appConfig = Services.Configuration;
 
@@ -32,7 +33,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
             azureAiClient.InitSystemPrompt(systemPrompt);
         }
 
-        var templateProvider = new TemplateProvider();
+        var templateProvider = Services.TemplateProvider;
         string? text = null;
 
         if (io.IsConsoleInputRedirected) //Handle text from stdin

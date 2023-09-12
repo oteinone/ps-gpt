@@ -22,10 +22,8 @@ public class AzureAiClient : IAiClient
     private Task<Response<StreamingChatCompletions>>? initTask;
     private bool initCompleted = false;
 
-    public AzureAiClient(IAppConfigurationProvider configProvider)
+    public AzureAiClient(AppConfigSection appConfig)
     {
-        var appConfig = configProvider.AppConfig;
-
         if (appConfig.EndpointType == null) throw new Exception("Could not init AI client as endpoint type was not found in configuration");
         if (appConfig.ApiKey == null) throw new Exception("Could not init AI client as api key was not found in configuration");
         if (appConfig.Model == null) throw new Exception("Could not init AI client as model name was not found in configuration");
@@ -52,7 +50,7 @@ public class AzureAiClient : IAiClient
 
         ModelName = appConfig.Model;
 
-        var modelConfig = Services.AppConfigurationProvider.AppConfig.ModelConfig;
+        var modelConfig = appConfig.ModelConfig;
         options = new ChatCompletionsOptions()
         {
             Messages = { },
@@ -71,7 +69,7 @@ public class AzureAiClient : IAiClient
         initTask = GetStreamingResponse(ChatRole.System, systemPrompt);
     }
 
-    public async IAsyncEnumerable<string> Ask(string userPrompt)
+    public virtual async IAsyncEnumerable<string> Ask(string userPrompt)
     {
         await EnsureInitCompleted();
         var response = await GetStreamingResponse(ChatRole.User, userPrompt);

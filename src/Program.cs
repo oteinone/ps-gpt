@@ -1,15 +1,21 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using System.IO.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using PowershellGpt.AzureAi;
+using PowershellGpt.Config;
 using PowershellGpt.Config.Provider;
 using PowershellGpt.ConsoleApp;
+using PowershellGpt.Templates;
 using Spectre.Console.Cli;
 
 // Set up DI
 HostApplicationBuilder builder = Host.CreateApplicationBuilder();
-builder.Services.AddTransient<IAppConfigurationProvider, AppConfigurationProvider>();
-builder.Services.AddTransient<IIOProvider, ConsoleIOProvider>();
+builder.Services.AddSingleton<ITemplateProvider, TemplateProvider>();
+builder.Services.AddSingleton<IFileSystem, FileSystem>();
+builder.Services.AddSingleton<IAppConfigurationProvider, AppConfigurationProvider>();
+builder.Services.AddTransient<AppConfigSection>(sp => sp.GetRequiredService<IAppConfigurationProvider>().AppConfig);
+builder.Services.AddSingleton<IIOProvider, ConsoleIOProvider>();
 builder.Services.AddTransient<IAiClient, AzureAiClient>();
 PowershellGpt.HostContainer.Host = builder.Build();
 
