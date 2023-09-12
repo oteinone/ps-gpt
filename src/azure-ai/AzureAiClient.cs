@@ -1,10 +1,18 @@
 using Azure;
 using Azure.AI.OpenAI;
 using PowershellGpt.Config;
+using PowershellGpt.Config.Provider;
 
 namespace PowershellGpt.AzureAi;
 
-public class AzureAiClient
+public interface IAiClient
+{
+    void InitSystemPrompt(string systemPrompt);
+    IAsyncEnumerable<string> Ask(string userPrompt);
+    IAsyncEnumerable<string> GetSystemResponse(); 
+}
+
+public class AzureAiClient : IAiClient
 {
     private readonly string ModelName;
     private readonly string EndpointUrl;
@@ -14,23 +22,26 @@ public class AzureAiClient
     private Task<Response<StreamingChatCompletions>>? initTask;
     private bool initCompleted = false;
 
-    public AzureAiClient(GptEndpointType type, string modelDeploymentName, string key, string? endpointUrl = null,
-        string? systemPrompt = null)
+    public AzureAiClient(IAppConfigurationProvider configProvider)
     {
-        ModelName = modelDeploymentName;
-        
+        var appConfig = configProvider.AppConfig;
+
+        if (appConfig.EndpointType == null) throw new Exception("Could not init AI client as endpoint type was not found in configuration");
+        if (appConfig.ApiKey == null) throw new Exception("Could not init AI client as api key was not found in configuration");
+        if (appConfig.Model == null) throw new Exception("Could not init AI client as model name was not found in configuration");
+
         try 
         {
-            if (type == GptEndpointType.OpenAIApi)
+            if (appConfig.EndpointType == GptEndpointType.OpenAIApi)
             {
                 EndpointUrl = "<OpenAI endpoint>";
-                client = new OpenAIClient(key);
+                client = new OpenAIClient(appConfig.ApiKey);
             }
             else
             {
-                _ = endpointUrl ?? throw new ArgumentNullException("openAiEndpointUrl");
-                EndpointUrl = endpointUrl;
-                client = new OpenAIClient(new Uri(endpointUrl), new AzureKeyCredential(key));
+                if (appConfig.EndpointUrl == null) throw new Exception("Could not init AI client as endpoint url was not found in configuration");
+                EndpointUrl = appConfig.EndpointUrl;
+                client = new OpenAIClient(new Uri(appConfig.EndpointUrl), new AzureKeyCredential(appConfig.ApiKey));
             }
 
         }
@@ -39,7 +50,9 @@ public class AzureAiClient
             throw new Exception ("Could not initialize open ai client", e);
         }
 
-        var modelConfig = AppConfiguration.AppConfig.ModelConfig;
+        ModelName = appConfig.Model;
+
+        var modelConfig = Services.AppConfigurationProvider.AppConfig.ModelConfig;
         options = new ChatCompletionsOptions()
         {
             Messages = { },
@@ -50,15 +63,12 @@ public class AzureAiClient
             PresencePenalty = modelConfig.PresencePenalty
         };
 
-        // Use system prompt if it has been defined
-        if (systemPrompt != null)
-        {
-            initTask = GetStreamingResponse(ChatRole.System, systemPrompt);
-        }
-        else
-        {
-            initTask = null;
-        }
+        initTask = null;
+    }
+
+    public void InitSystemPrompt(string systemPrompt)
+    {
+        initTask = GetStreamingResponse(ChatRole.System, systemPrompt);
     }
 
     public async IAsyncEnumerable<string> Ask(string userPrompt)

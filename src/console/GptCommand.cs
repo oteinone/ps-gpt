@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using PowershellGpt.AzureAi;
 using PowershellGpt.Config;
+using PowershellGpt.Templates;
 using Spectre.Console.Cli;
 
 namespace PowershellGpt.ConsoleApp;
@@ -11,31 +12,35 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
 {
     public override async Task<int> ExecuteAsync([NotNull] CommandContext context, [NotNull] Options settings)
     {
-        // See if user has requested config commands
+        // See if user has requested config commands and return if they are succesfully completed
         var configResult = await HandleConfigCommands(settings);
         if (configResult >= 0) return configResult;
+
+        var io = Services.IOProvider;
         
         // Make sure GptConfigSection is populated
-        Application.EnsureValidConfiguration();
+        io.EnsureValidConfiguration();
+
+        var appConfig = Services.Configuration;
 
         // Initialize client
-        var azureAiClient = new AzureAiClient(
-            AppConfiguration.AppConfig.EndpointType ?? throw new ArgumentException("AppConfig.EndpointType should have been defined but it is null"),
-            AppConfiguration.AppConfig.Model ?? throw new ArgumentException("AppConfig.Model should have been defined but it is null"),
-            AppConfiguration.AppConfig.ApiKey ?? throw new ArgumentException("AppConfig.ApiKey should have been defined but it is null"),
-            AppConfiguration.AppConfig.EndpointUrl,
-            settings.SystemPrompt ?? AppConfiguration.AppConfig.DefaultSystemPrompt);
+        var azureAiClient = Services.AiClient;
 
+        var systemPrompt = settings.SystemPrompt ?? appConfig.DefaultSystemPrompt;
+        if (systemPrompt != null)
+        {
+            azureAiClient.InitSystemPrompt(systemPrompt);
+        }
 
-        var template = await GetTemplate(settings);
+        var templateProvider = new TemplateProvider();
         string? text = null;
 
-        if (Console.IsInputRedirected) //Handle text from stdin
+        if (io.IsConsoleInputRedirected) //Handle text from stdin
         {
-            text = await Application.ReadPipedInputAsync();
+            text = await io.ReadPipedInputAsync();
             if (!settings.Chat || !ConsoleHelper.ReclaimConsole()) // if chat mode is not attempted or console cannot be claimed, pipe directly to stdout and terminate
             {
-                await Application.StreamChatAnswerToStdOutAsync(azureAiClient.Ask(GetUserMessage(text, template)));
+                await io.StreamChatAnswerToStdOutAsync(azureAiClient.Ask(await templateProvider.GetUserMessage(text, settings.Template)));
                 return 0;
             }
         }
@@ -44,7 +49,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
             text = settings.Text;
             if (!settings.Chat) // If chat mode is not attempted, pipe to stdout and terminate
             {
-                await Application.StreamChatAnswerToStdOutAsync(azureAiClient.Ask(GetUserMessage(text, template)));
+                await io.StreamChatAnswerToStdOutAsync(azureAiClient.Ask(await templateProvider.GetUserMessage(text, settings.Template)));
                 return 0;
             }
         }
@@ -54,37 +59,38 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         // Show system response if custom assistant prompt was used to know whether it has been accepted.
         if (!string.IsNullOrEmpty(settings.SystemPrompt))
         {
-            Application.WriteHorizontalDivider("System prompt response");
-            await Application.StreamChatAnswerToScreenAsync(azureAiClient.GetSystemResponse());
+            io.WriteHorizontalDivider("System prompt response");
+            await io.StreamChatAnswerToScreenAsync(azureAiClient.GetSystemResponse());
         }
 
-        Application.WriteHorizontalDivider("Ask ChatGPT");
+        io.WriteHorizontalDivider("Ask ChatGPT");
         
         // Main program loop
         // First loop, use template and input text when appropriate
-        string userPrompt = GetUserMessage(
-            text = text ?? Application.AskUser(),
-            template
+        string userPrompt = await templateProvider.GetUserMessage(
+            text ?? io.AskUser(),
+            settings.Template
         );
+
 
         while(true)
         {
-            if (string.IsNullOrWhiteSpace(userPrompt) || AppConfiguration.AppConfig.ExitTerms.Contains(userPrompt.ToLower())
-                || AppConfiguration.AppConfig.ExitTerms.Contains(text?.ToLower()))
+            if (string.IsNullOrWhiteSpace(userPrompt) || appConfig.ExitTerms.Contains(userPrompt.ToLower())
+                || appConfig.ExitTerms.Contains(text?.ToLower()))
             {
                 break;
             }
             
-            if (text == AppConfiguration.AppConfig.MultilineIndicator)
+            if (text == appConfig.MultilineIndicator)
             {
-                userPrompt = GetUserMessage(Application.ReadMultiline(), template);
+                userPrompt = await templateProvider.GetUserMessage(io.ReadMultiline(), settings.Template);
             }
-            await Application.StreamChatAnswerToScreenAsync(azureAiClient.Ask(userPrompt));
+            await io.StreamChatAnswerToScreenAsync(azureAiClient.Ask(userPrompt));
             // get input for next loop
-            userPrompt = text = Application.AskUser();
+            userPrompt = text = io.AskUser();
         }
 
-        Application.WriteHorizontalDivider("Chat conversation done");
+        io.WriteHorizontalDivider("Chat conversation done");
 
         return 0;
     }
@@ -93,7 +99,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
     {
         if (settings.Clear)
         {
-            AppConfiguration.ClearAll();
+            Services.AppConfigurationProvider.ClearAll();
             Console.WriteLine("Configuration cleared");
             return 0;
         }
@@ -104,39 +110,19 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
         }
         else if (!string.IsNullOrEmpty(settings.SetProfile))
         {
-            string? pipedText = Console.IsInputRedirected ? await Application.ReadPipedInputAsync() : null;
+            var io = Services.IOProvider;
+            string? pipedText = io.IsConsoleInputRedirected ? await io.ReadPipedInputAsync() : null;
             SetGptProfile(pipedText, settings);
             PrintGptProfile();
             return 0;
         }
         return -1;
     }
-    
-    private string GetUserMessage(string text, string? template)
-    {
-        return template == null ? text
-            : template.Contains("{text}") ? template.Replace("{text}", text)
-            : $"{template}{Environment.NewLine}###{Environment.NewLine}{text}";
-    }
-
-    
-    private static async Task<string?> GetTemplate(Options settings)
-    {
-        if (settings.Template != null)
-        {
-            return await Application.GetTemplate(settings.Template);
-        }
-        else if (!string.IsNullOrWhiteSpace(AppConfiguration.AppConfig.DefaultAppPrompt))
-        {
-            return AppConfiguration.AppConfig.DefaultAppPrompt;
-        }
-        return null;
-    }
 
     private static void PrintGptProfile()
     {
-        var gptConfig = AppConfiguration.AppConfig;
-        Application.PrintProfile(new string[6,2]{
+        var gptConfig = Services.Configuration;
+        Services.IOProvider.PrintProfile(new string[6,2]{
             { ConfigurationConst.EndpointType, gptConfig.EndpointType.ToString() ?? string.Empty },
             { ConfigurationConst.Model, gptConfig.Model ?? "" },
             { ConfigurationConst.EndpointUrl, gptConfig.EndpointType == GptEndpointType.OpenAIApi ? "<OpenAI Api>" : gptConfig.EndpointUrl ?? "" },
@@ -148,7 +134,7 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
 
     private static void SetGptProfile(string? pipedText, Options settings)
     {
-        var gptConfig = AppConfiguration.AppConfig;
+        var gptConfig = Services.Configuration;
         string setting;
         string? value;
 
@@ -177,27 +163,28 @@ public class GptCommand : AsyncCommand<GptCommand.Options>
             }
         }
         
+        var appConfigurationProvider = Services.AppConfigurationProvider;
         switch(setting.ToLower())
         {
             case ConfigurationConst.Model:
                 gptConfig.Model = value;
-                AppConfiguration.SaveAll();
+                appConfigurationProvider.SaveAll();
                 break;
             case ConfigurationConst.EndpointUrl:
                 gptConfig.EndpointUrl = value;
-                AppConfiguration.SaveAll();
+                appConfigurationProvider.SaveAll();
                 break;
             case ConfigurationConst.ApiKey:
                 gptConfig.ApiKey = value;
-                AppConfiguration.SaveAll();
+                appConfigurationProvider.SaveAll();
                 break;
             case ConfigurationConst.DefaultPrompt:
                 gptConfig.DefaultAppPrompt = value;
-                AppConfiguration.SaveAll();
+                appConfigurationProvider.SaveAll();
                 break;
             case ConfigurationConst.DefaultSystemPrompt:
                 gptConfig.DefaultSystemPrompt = value;
-                AppConfiguration.SaveAll();
+                appConfigurationProvider.SaveAll();
                 break;
             default:
                 throw new Exception($"Did not recognize profile setting {setting}");

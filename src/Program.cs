@@ -1,6 +1,25 @@
 ﻿// See https://aka.ms/new-console-template for more information
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using PowershellGpt.AzureAi;
+using PowershellGpt.Config.Provider;
 using PowershellGpt.ConsoleApp;
 using Spectre.Console.Cli;
+
+// Set up DI
+HostApplicationBuilder builder = Host.CreateApplicationBuilder();
+builder.Services.AddTransient<IAppConfigurationProvider, AppConfigurationProvider>();
+builder.Services.AddTransient<IIOProvider, ConsoleIOProvider>();
+builder.Services.AddTransient<IAiClient, AzureAiClient>();
+PowershellGpt.HostContainer.Host = builder.Build();
+
+// Helper function
+void DebugStackTrace(Exception e, int stackCount = 10)
+{
+    if (stackCount < 0) return;
+    Console.Error.WriteLine($"Message: {e.Message}{Environment.NewLine}{e.StackTrace}");
+    if (e.InnerException != null) DebugStackTrace(e.InnerException, stackCount - 1);
+}
 
 // Initialize application and configuration
 var app = new CommandApp<GptCommand>();
@@ -20,9 +39,3 @@ app.Configure(config => {
 
 return app.Run(args);
 
-void DebugStackTrace(Exception e, int stackCount = 10)
-{
-    if (stackCount < 0) return;
-    Console.Error.WriteLine($"Message: {e.Message}{Environment.NewLine}{e.StackTrace}");
-    if (e.InnerException != null) DebugStackTrace(e.InnerException, stackCount - 1);
-}
