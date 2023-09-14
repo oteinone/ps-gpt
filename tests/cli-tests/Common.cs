@@ -50,13 +50,15 @@ public class Common
             mockAIClient,
             mockConfigProvider,
             mockTemplateProvider,
-            mockFileSystem
+            mockFileSystem,
+            testConfiguration
         );
     }
 
     public class MockEnv
     {
-        public MockEnv(IHost host, Mock<ConsoleIOProvider> iOProvider, Mock<AzureAiClient> aiClient, Mock<AppConfigurationProvider> configProvider, Mock<TemplateProvider> templateProvider, Mock<FileSystem> fileSystem)
+        public MockEnv(IHost host, Mock<ConsoleIOProvider> iOProvider, Mock<AzureAiClient> aiClient, Mock<AppConfigurationProvider> configProvider,
+        Mock<TemplateProvider> templateProvider, Mock<FileSystem> fileSystem, AppConfigSection testConfig)
         {
             Host = host;
             IOProvider = iOProvider;
@@ -64,6 +66,7 @@ public class Common
             ConfigProvider = configProvider;
             TemplateProvider = templateProvider;
             FileSystem = fileSystem;
+            TestConfiguration = testConfig;
         }
 
         public IHost Host { get; init; }
@@ -72,6 +75,7 @@ public class Common
         public Mock<AppConfigurationProvider> ConfigProvider { get; init; }
         public Mock<TemplateProvider> TemplateProvider { get; init; }
         public Mock<FileSystem> FileSystem { get; init; }
+        public AppConfigSection TestConfiguration { get; init; }
     }
 
     const GptEndpointType DEFAULT_ENDPOINT_TYPE = GptEndpointType.AzureOpenAI;

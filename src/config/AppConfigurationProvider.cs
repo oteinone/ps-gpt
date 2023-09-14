@@ -8,7 +8,6 @@ public interface IAppConfigurationProvider
     public AppConfigSection AppConfig { get; }
     public void Save(AppConfigSection appConfig);
     public void ClearAll();
-
 }
 
 public class AppConfigurationProvider : IAppConfigurationProvider

@@ -2,6 +2,7 @@ using PowershellGpt.ConsoleApp;
 using Spectre.Console.Cli;
 using Moq;
 using Spectre.Console;
+using PowershellGpt.Config;
 
 public class GptCommandTests
 {
@@ -110,6 +111,31 @@ public class GptCommandTests
         var context = GetContext(mockEnv.Host);
         var result = new GptCommand().ExecuteAsync(context, options);
         mockEnv.AiClient.Verify(aic => aic.Ask("Template: This is a question"), Times.Once);
+    }
+
+    [Theory]
+    [InlineData("model", "Model", "gpt900")]
+    [InlineData("endpoint_url", "EndpointUrl", "https://www.google.fi?gpt")]
+    [InlineData("api_key", "ApiKey", "asdf900198hjasdkjhk===")]
+    [InlineData("default_prompt_template", "DefaultAppPrompt", "Default app prompt: ")]
+    [InlineData("default_system_prompt", "DefaultSystemPrompt", "Default system prompt: ")]
+    public void Settings_Work(string paramName, string propertyName, string testValue)
+    {
+        var mockEnv = Common.Bootstrap();
+
+        var options = new GptCommandOptions()
+        {
+            SetProfile = $"{paramName}=${testValue}"
+        };
+
+        var context = GetContext(mockEnv.Host);
+
+        var result = new GptCommand().ExecuteAsync(context, options);
+        
+        mockEnv.ConfigProvider.Verify(configProvider => configProvider.Save(It.IsAny<AppConfigSection>()), Times.Once);
+
+        var appConfigType = typeof(AppConfigSection);
+        Assert.Equal(testValue, appConfigType?.GetProperty(propertyName)?.GetValue(mockEnv.TestConfiguration));
     }
 }
 
