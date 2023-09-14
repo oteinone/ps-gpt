@@ -26,8 +26,8 @@ public class Common
     {
         var mockFileSystem = new Mock<FileSystem>();
         var mockConfigProvider = new Mock<AppConfigurationProvider>(mockFileSystem.Object);
-        var mockIOProvider = new Mock<ConsoleIOProvider>(testConfiguration);
-        var mockAIClient = new Mock<AzureAiClient>(testConfiguration);
+        var mockIOProvider = new Mock<ConsoleIOProvider>(mockConfigProvider.Object);
+        var mockAIClient = new Mock<AzureAiClient>(mockConfigProvider.Object);
         var mockTemplateProvider = new Mock<TemplateProvider>(mockFileSystem.Object);
 
         // Set up DI
@@ -35,16 +35,13 @@ public class Common
         builder.Services.AddSingleton<ITemplateProvider>(sp => mockTemplateProvider.Object);
         builder.Services.AddSingleton<IFileSystem>(sp => mockFileSystem.Object);
         builder.Services.AddTransient<IAppConfigurationProvider>(sp => mockConfigProvider.Object);
-        builder.Services.AddTransient<AppConfigSection>(sp => sp.GetRequiredService<IAppConfigurationProvider>().AppConfig);
         builder.Services.AddSingleton<IIOProvider>(sp => mockIOProvider.Object);
         builder.Services.AddSingleton<IAiClient>(sp => mockAIClient.Object);
-
-        //PowershellGpt.HostContainer.Host = builder.Build();
 
         mockAIClient.Setup(client => client.Ask(It.IsAny<string>())).Returns((string s) => new string[] { s }.ToAsyncEnumerable());
         mockIOProvider.Setup(io => io.IsConsoleInputRedirected).Returns(false);
         mockConfigProvider.Setup(configProvider => configProvider.AppConfig).Returns(testConfiguration);
-        mockConfigProvider.Setup(configProvider => configProvider.SaveAll()).Verifiable();
+        mockConfigProvider.Setup(configProvider => configProvider.Save(It.IsAny<AppConfigSection>())).Verifiable();
         mockTemplateProvider.Setup(provider => provider.GetUserMessage(It.IsAny<string>(), It.IsAny<string?>())).ReturnsAsync((string text, string? template) => text);
         
         return new MockEnv(
@@ -82,31 +79,4 @@ public class Common
     const string DEFAULT_MODEL = "test-model";
     const string DEFAULT_API_KEY = "123456ASDFGHE";
 
-}
-
-public class DummyConfigurationProvider : IAppConfigurationProvider
-{
-    public DummyConfigurationProvider()
-    {
-        _appConfig = new AppConfigSection();
-    }
-
-    public DummyConfigurationProvider(AppConfigSection configuration)
-    {
-        _appConfig = configuration;
-    }
-
-    private AppConfigSection _appConfig;
-
-    public AppConfigSection AppConfig => _appConfig;
-
-    public void ClearAll()
-    {
-        return;
-    }
-
-    public void SaveAll()
-    {
-        return;
-    }
 }

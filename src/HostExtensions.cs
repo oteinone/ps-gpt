@@ -15,8 +15,6 @@ public static class HostExtensions
     public static IIOProvider GetIOProvider(this IHost host)
         => host.Services.GetRequiredService<IIOProvider>();
 
-    public static AppConfigSection GetConfiguration(this IHost host)
-        => host.Services.GetRequiredService<AppConfigSection>();
     public static IAiClient GetAiClient(this IHost host)
         => host.Services.GetRequiredService<IAiClient>();
     public static ITemplateProvider GetTemplateProvider(this IHost host) 

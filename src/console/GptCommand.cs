@@ -20,10 +20,8 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
         var io = host.GetIOProvider();
         
         // Make sure GptConfigSection is populated
-        io.EnsureValidConfiguration();
-        host.GetAppConfigurationProvider().SaveAll();
-
-        var appConfig = host.GetConfiguration();
+        var appConfig = io.EnsureValidConfiguration(host.GetAppConfigurationProvider().AppConfig);
+        host.GetAppConfigurationProvider().Save(appConfig);
 
         // Initialize client
         var azureAiClient = host.GetAiClient();
@@ -85,7 +83,7 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
             
             if (text == appConfig.MultilineIndicator)
             {
-                userPrompt = await templateProvider.GetUserMessage(io.ReadMultiline(), settings.Template);
+                userPrompt = await templateProvider.GetUserMessage(io.ReadMultiline(appConfig.MultilineIndicator), settings.Template);
             }
             await io.StreamChatAnswerToScreenAsync(azureAiClient.Ask(userPrompt));
             // get input for next loop
@@ -123,7 +121,7 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
 
     private static void PrintGptProfile(IHost host)
     {
-        var gptConfig = host.GetConfiguration();
+        var gptConfig = host.GetAppConfigurationProvider().AppConfig;
         host.GetIOProvider().PrintProfile(new string[6,2]{
             { ConfigurationConst.EndpointType, gptConfig.EndpointType.ToString() ?? string.Empty },
             { ConfigurationConst.Model, gptConfig.Model ?? "" },
@@ -136,7 +134,8 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
 
     private static void SetGptProfile(IHost host, string? pipedText, GptCommandOptions settings)
     {
-        var gptConfig = host.GetConfiguration();
+        var appConfigurationProvider = host.GetAppConfigurationProvider();
+        var gptConfig = appConfigurationProvider.AppConfig;
         string setting;
         string? value;
 
@@ -165,28 +164,27 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
             }
         }
         
-        var appConfigurationProvider = host.GetAppConfigurationProvider();
         switch(setting.ToLower())
         {
             case ConfigurationConst.Model:
                 gptConfig.Model = value;
-                appConfigurationProvider.SaveAll();
+                appConfigurationProvider.Save(gptConfig);
                 break;
             case ConfigurationConst.EndpointUrl:
                 gptConfig.EndpointUrl = value;
-                appConfigurationProvider.SaveAll();
+                appConfigurationProvider.Save(gptConfig);
                 break;
             case ConfigurationConst.ApiKey:
                 gptConfig.ApiKey = value;
-                appConfigurationProvider.SaveAll();
+                appConfigurationProvider.Save(gptConfig);
                 break;
             case ConfigurationConst.DefaultPrompt:
                 gptConfig.DefaultAppPrompt = value;
-                appConfigurationProvider.SaveAll();
+                appConfigurationProvider.Save(gptConfig);
                 break;
             case ConfigurationConst.DefaultSystemPrompt:
                 gptConfig.DefaultSystemPrompt = value;
-                appConfigurationProvider.SaveAll();
+                appConfigurationProvider.Save(gptConfig);
                 break;
             default:
                 throw new Exception($"Did not recognize profile setting {setting}");

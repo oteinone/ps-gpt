@@ -22,8 +22,10 @@ public class AzureAiClient : IAiClient
     private Task<Response<StreamingChatCompletions>>? initTask;
     private bool initCompleted = false;
 
-    public AzureAiClient(AppConfigSection appConfig)
+    public AzureAiClient(IAppConfigurationProvider configprovider)
     {
+        var appConfig = configprovider.AppConfig;
+        
         if (appConfig.EndpointType == null) throw new Exception("Could not init AI client as endpoint type was not found in configuration");
         if (appConfig.ApiKey == null) throw new Exception("Could not init AI client as api key was not found in configuration");
         if (appConfig.Model == null) throw new Exception("Could not init AI client as model name was not found in configuration");

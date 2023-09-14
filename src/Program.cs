@@ -14,7 +14,6 @@ HostApplicationBuilder builder = Host.CreateApplicationBuilder();
 builder.Services.AddSingleton<ITemplateProvider, TemplateProvider>();
 builder.Services.AddSingleton<IFileSystem, FileSystem>();
 builder.Services.AddSingleton<IAppConfigurationProvider, AppConfigurationProvider>();
-builder.Services.AddTransient<AppConfigSection>(sp => sp.GetRequiredService<IAppConfigurationProvider>().AppConfig);
 builder.Services.AddSingleton<IIOProvider, ConsoleIOProvider>();
 builder.Services.AddTransient<IAiClient, AzureAiClient>();
 var host = builder.Build();
