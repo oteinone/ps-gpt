@@ -116,16 +116,16 @@ public class GptCommandTests
     [Theory]
     [InlineData("model", "Model", "gpt900")]
     [InlineData("endpoint_url", "EndpointUrl", "https://www.google.fi?gpt")]
-    [InlineData("api_key", "ApiKey", "asdf900198hjasdkjhk===")]
-    [InlineData("default_prompt_template", "DefaultAppPrompt", "Default app prompt: ")]
-    [InlineData("default_system_prompt", "DefaultSystemPrompt", "Default system prompt: ")]
+    [InlineData("api_key", "ApiKey", "asdf900198hjasdkjhk")]
+    [InlineData("default_prompt_template", "DefaultAppPrompt", "Default app prompt:")]
+    [InlineData("default_system_prompt", "DefaultSystemPrompt", "Default system prompt:")]
     public void Settings_Work(string paramName, string propertyName, string testValue)
     {
         var mockEnv = Common.Bootstrap();
 
         var options = new GptCommandOptions()
         {
-            SetProfile = $"{paramName}=${testValue}"
+            SetProfile = $"{paramName}={testValue}"
         };
 
         var context = GetContext(mockEnv.Host);
