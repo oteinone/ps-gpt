@@ -16,7 +16,6 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
         var configResult = await HandleConfigCommands(host, settings);
         if (configResult >= 0) return configResult;
 
-
         var io = host.GetIOProvider();
         
         // Make sure GptConfigSection is populated
@@ -32,7 +31,7 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
             azureAiClient.InitSystemPrompt(systemPrompt);
         }
 
-        var templateProvider = host.GetTemplateProvider()   ;
+        var templateProvider = host.GetTemplateProvider();
         string? text = null;
 
         if (io.IsConsoleInputRedirected) //Handle text from stdin
@@ -68,7 +67,7 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
         // Main program loop
         // First loop, use template and input text when appropriate
         string userPrompt = await templateProvider.GetUserMessage(
-            text ?? io.AskUser(),
+            text ?? (text = io.AskUser()),
             settings.Template
         );
 
@@ -80,7 +79,6 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
             {
                 break;
             }
-            
             if (text == appConfig.MultilineIndicator)
             {
                 userPrompt = await templateProvider.GetUserMessage(io.ReadMultiline(appConfig.MultilineIndicator), settings.Template);
@@ -100,7 +98,7 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
         if (settings.Clear)
         {
             host.GetAppConfigurationProvider().ClearAll();
-            Console.WriteLine("Configuration cleared");
+            host.GetIOProvider().Print("Configuration cleared");
             return 0;
         }
         else if (settings.GetProfile)
@@ -108,11 +106,19 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
             PrintGptProfile(host);
             return 0;
         }
+        else if (!string.IsNullOrEmpty(settings.GetTemplate))
+        {
+            await PrintTemplate(host, settings);
+            return 0;            
+        }
+        else if (!string.IsNullOrEmpty(settings.SetTemplate))
+        {
+            await SetTemplate(host, settings);
+            return 0;            
+        }
         else if (!string.IsNullOrEmpty(settings.SetProfile))
         {
-            var io = host.GetIOProvider();
-            string? pipedText = io.IsConsoleInputRedirected ? await io.ReadPipedInputAsync() : null;
-            SetGptProfile(host, pipedText, settings);
+            await SetGptProfile(host, settings);
             PrintGptProfile(host);
             return 0;
         }
@@ -132,7 +138,27 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
         });
     }
 
-    private static void SetGptProfile(IHost host, string? pipedText, GptCommandOptions settings)
+    private static async Task PrintTemplate(IHost host, GptCommandOptions settings)
+    {
+        host.GetIOProvider().Print(await host.GetTemplateProvider().GetTemplate(settings.GetTemplate!));
+    }
+
+    private static async Task SetTemplate(IHost host, GptCommandOptions settings)
+    {
+        var io = host.GetIOProvider();
+        string? templateContent = io.IsConsoleInputRedirected ? await io.ReadPipedInputAsync() : settings.Text;
+        var templateProvider = host.GetTemplateProvider();
+        if (templateContent == null)
+        {
+            await templateProvider.DeleteTemplate(settings.SetTemplate!);
+        }
+        else
+        {
+            await templateProvider.SetTemplate(settings.SetTemplate!, templateContent);
+        }
+    }
+
+    private static async Task SetGptProfile(IHost host, GptCommandOptions settings)
     {
         var appConfigurationProvider = host.GetAppConfigurationProvider();
         var gptConfig = appConfigurationProvider.AppConfig;
@@ -143,6 +169,9 @@ public class GptCommand : AsyncCommand<GptCommandOptions>
         {
             throw new Exception("");
         }
+
+        var io = host.GetIOProvider();
+        string? pipedText = io.IsConsoleInputRedirected ? await io.ReadPipedInputAsync() : null;
 
         if (pipedText != null)
         {

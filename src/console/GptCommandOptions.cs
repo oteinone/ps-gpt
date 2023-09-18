@@ -34,4 +34,12 @@ public class GptCommandOptions : CommandSettings
     [CommandOption("--template|-t")]
     [Description("A file path pointing to a template file. Template file is used as a wrapper for text content. '{text}' in templates is replaced with the text prompt")]
     public string? Template { get; set; }
+
+    [CommandOption("--set-template")]
+    [Description("Set a template in ps-gpt's template folder to the content specified in input text or pipeline.")]
+    public string? SetTemplate { get; set; }
+
+    [CommandOption("--get-template")]
+    [Description("Print a template in ps-gpt's template folder")]
+    public string? GetTemplate { get; set; }
 }

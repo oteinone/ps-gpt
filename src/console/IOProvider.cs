@@ -17,6 +17,7 @@ public interface IIOProvider
     Task StreamChatAnswerToStdOutAsync(IAsyncEnumerable<string> messageStream);
     Task<StringBuilder> StreamChatAnswerToScreenAsync(IAsyncEnumerable<string> messageStream);
     void PrintProfile(string[,] profile);
+    void Print(string text);
 }
 
 public class ConsoleIOProvider: IIOProvider
@@ -180,5 +181,10 @@ public class ConsoleIOProvider: IIOProvider
         };
         prompt.AddChoices(Enum.GetValues<T>());
         return AnsiConsole.Prompt(prompt);
+    }
+
+    public void Print(string text)
+    {
+        AnsiConsole.WriteLine(text);
     }
 }
