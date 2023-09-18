@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/ps-gpt.csproj",
+                "${workspaceFolder}/src/ps-gpt.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/ps-gpt.csproj",
+                "${workspaceFolder}/src/ps-gpt.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -33,7 +33,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/ps-gpt.csproj"
+                "${workspaceFolder}/src/ps-gpt.csproj"
             ],
             "problemMatcher": "$msCompile"
         }
