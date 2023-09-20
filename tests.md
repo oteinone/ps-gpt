@@ -1,8 +1,2 @@
-- OpenAI API & Azure OpenAI
 - Linux + Windows
-- get-profile
-- set-profile
-- clear
 - system-prompt
-- With & without stdin pipe
-- With template and without template

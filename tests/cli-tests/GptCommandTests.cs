@@ -209,5 +209,58 @@ public class GptCommandTests
         var result = await new GptCommand().ExecuteAsync(context, options);
         Assert.Contains("Template: This is a question", AnsiConsole.ExportText());
     }
+
+    [Fact]
+    public async Task PipelineData_Forwarded_To_Gpt()
+    {
+        var mockEnv = Common.Bootstrap();
+        var options = new GptCommandOptions()
+        {
+        };
+
+        mockEnv.IOProvider.Setup(io => io.IsConsoleInputRedirected).Returns(true);
+        mockEnv.IOProvider.Setup(io => io.ReadPipedInputAsync()).ReturnsAsync("This is a question");
+
+        var context = GetContext(mockEnv.Host);
+
+        var result = await new GptCommand().ExecuteAsync(context, options);
+        mockEnv.AiClient.Verify(aic => aic.Ask("This is a question"), Times.Once);        
+    }
+
+    [Fact]
+    public async Task PipelineData_Forwarded_To_SetTemplate()
+    {
+        var mockEnv = Common.Bootstrap();
+        var options = new GptCommandOptions()
+        {
+            SetTemplate = ":mytemplate"
+        };
+
+        mockEnv.IOProvider.Setup(io => io.IsConsoleInputRedirected).Returns(true);
+        mockEnv.IOProvider.Setup(io => io.ReadPipedInputAsync()).ReturnsAsync("This is a new template");
+        mockEnv.TemplateProvider.Setup(tp => tp.SetTemplate(":mytemplate", "This is a new template")).Verifiable();
+
+        var context = GetContext(mockEnv.Host);
+
+        var result = await new GptCommand().ExecuteAsync(context, options);
+        mockEnv.TemplateProvider.Verify(tp => tp.SetTemplate(":mytemplate", "This is a new template"), Times.Once);        
+    }
+
+    [Fact]
+    public async Task PipelineData_Forwarded_To_Config()
+    {
+        var mockEnv = Common.Bootstrap();
+        var options = new GptCommandOptions()
+        {
+            SetProfile = "model"
+        };
+
+        mockEnv.IOProvider.Setup(io => io.IsConsoleInputRedirected).Returns(true);
+        mockEnv.IOProvider.Setup(io => io.ReadPipedInputAsync()).ReturnsAsync("gpt9001");
+        var context = GetContext(mockEnv.Host);
+
+        var result = await new GptCommand().ExecuteAsync(context, options);
+        Assert.Equal("gpt9001", mockEnv.TestConfiguration.Model);
+    }
 }
 
