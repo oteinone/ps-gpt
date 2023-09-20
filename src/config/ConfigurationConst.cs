@@ -1,4 +1,4 @@
-namespace PowershellGpt.ConsoleApp;
+namespace PowershellGpt.Config;
 
 public static class ConfigurationConst
 {

@@ -18,14 +18,6 @@ builder.Services.AddSingleton<IIOProvider, ConsoleIOProvider>();
 builder.Services.AddTransient<IAiClient, AzureAiClient>();
 var host = builder.Build();
 
-// Helper function
-void DebugStackTrace(Exception e, int stackCount = 10)
-{
-    if (stackCount < 0) return;
-    Console.Error.WriteLine($"Error: {e.GetType()}{Environment.NewLine}Message: {e.Message}{Environment.NewLine}{e.StackTrace}");
-    if (e.InnerException != null) DebugStackTrace(e.InnerException, stackCount - 1);
-}
-
 // Initialize application and configuration
 var app = new CommandApp<GptCommand>();
 app.WithData(host);
