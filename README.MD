@@ -1,6 +1,6 @@
 # About
 
-This project allows you to use Azure OpenAI conversational models directly from console.
+This project allows you to use OpenAI and Azure OpenAI gpt models directly from command line.
 
 The project has currently been tested with 
 - Windows 10 / .NET 7.0 / Windows Terminal / Powershell
@@ -64,7 +64,7 @@ Drop the binary somewhere in your path. The binaries are named ps-gpt by default
 
 ## Templates
 - You can set a prompt template for the profile using `gpt --set-profile default_prompt_template="Instruction: {0}"` . Template will be used to every first message in a conversation
-  - `{0}` in the template will be replaced with the text content either from 
+  - `{0}` in the template will be replaced with the text content either from the pipeline or first positional parameter
 # Development
 
 ## Basic development commands
